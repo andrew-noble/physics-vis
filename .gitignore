@@ -24,6 +24,7 @@ backend/*.test
 backend/*.out
 backend/go.sum
 backend/.env*
+backend/logs/
 
 # Go generated files
 *.exe
