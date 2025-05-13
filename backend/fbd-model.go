@@ -24,7 +24,8 @@ const (
 type BodyShape string
 
 const (
-	Rect   BodyShape = "rect"
+	Square   BodyShape = "square"
+	Rectangle   BodyShape = "rectangle"
 	Circle BodyShape = "circle"
 )
 
@@ -38,7 +39,7 @@ const (
 // ---------- payload structs ----------
 type Body struct {
 	ID    string    `json:"id" validate:"required"`
-	Shape BodyShape `json:"shape" validate:"required,oneof=rect circle" jsonschema:"enum=rect,enum=circle"`
+	Shape BodyShape `json:"shape" validate:"required,oneof=rectangle square circle" jsonschema:"enum=rectangle,enum=square,enum=circle"`
 	Angle float64   `json:"angle" validate:"required"` // degrees
 }
 
