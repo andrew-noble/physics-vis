@@ -9,17 +9,15 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
-	_ "github.com/openai/openai-go/shared"
 )
+
+var client openai.Client  // Remove the * to make it a struct instead of pointer
 
 func getTest(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "Hello, World!")
 }
 
 func getLlmResponse(c *gin.Context) {
-	// Initialize OpenAI client
-	client := openai.NewClient(option.WithAPIKey(os.Getenv("OPENAI_API_KEY")))
-
 	chatCompletion, err := client.Chat.Completions.New(c.Request.Context(), openai.ChatCompletionNewParams{
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage("Say this is a test"),
@@ -38,10 +36,13 @@ func getLlmResponse(c *gin.Context) {
 }
 
 func main() {
-	// Load .env file
+	// Load .env file first
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: .env file not found")
 	}
+
+	// Initialize the client
+	client = openai.NewClient(option.WithAPIKey(os.Getenv("OPENAI_API_KEY")))
 
 	// Get environment variables
 	port := os.Getenv("PORT")
