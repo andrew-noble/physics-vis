@@ -14,6 +14,7 @@ frontend/.turbo/
 frontend/.env*
 frontend/yarn.lock # optional, if you use npm only
 frontend/package-lock.json # optional, if you use yarn only
+frontend/.vite
 
 # === Go Backend ===
 backend/bin/
