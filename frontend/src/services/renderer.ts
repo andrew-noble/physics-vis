@@ -106,15 +106,20 @@ export class Renderer {
         bodyGroup
           .append("circle")
           .attr("r", radius)
+          .attr("cx", 0)
+          .attr("cy", 0)
           .attr("fill", defaultTheme.backgroundColor)
           .attr("stroke", defaultTheme.gridColor)
           .attr("stroke-width", 2);
         break;
       case "square":
+        const side = this.xScale(1) - this.xScale(0);
         bodyGroup
           .append("rect")
-          .attr("width", this.xScale(2) - this.xScale(0))
-          .attr("height", this.xScale(2) - this.xScale(0))
+          .attr("width", side)
+          .attr("height", side)
+          .attr("x", -side / 2)
+          .attr("y", -side / 2)
           .attr("fill", defaultTheme.backgroundColor)
           .attr("stroke", defaultTheme.gridColor)
           .attr("stroke-width", 2);

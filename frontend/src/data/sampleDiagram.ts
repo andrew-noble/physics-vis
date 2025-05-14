@@ -3,7 +3,7 @@ import { Diagram } from "@/types";
 export const sampleDiagram: Diagram = {
   body: {
     id: "block1",
-    shape: "rectangle",
+    shape: "square",
     angle: 30,
   },
   forces: [
