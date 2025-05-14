@@ -1,0 +1,12 @@
+<symbol id="voltage-source">
+    <g transform="translate(0,0)" stroke="#000" stroke-width="2">
+        <!-- Left terminal -->
+        <path d="M 0,50 H 40" fill="none" />
+        <!-- Negative (shorter) vertical line -->
+        <path d="M 40,35 V 65" fill="none" stroke-width="2" />
+        <!-- Positive (longer) vertical line -->
+        <path d="M 60,25 V 75" fill="none" stroke-width="2" />
+        <!-- Right terminal -->
+        <path d="M 60,50 H 100" fill="none" />
+    </g>
+</symbol>

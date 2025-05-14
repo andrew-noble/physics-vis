@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">
+    <g transform="translate(-50,-50)" stroke="#000" stroke-width="2">
+        <!-- Left terminal -->
+        <path d="M 0,50 H 40" fill="none" />
+        <!-- Left capacitor plate -->
+        <path d="M 40,30 V 70" fill="none" />
+        <!-- Right capacitor plate -->
+        <path d="M 60,30 V 70" fill="none" />
+        <!-- Right terminal -->
+        <path d="M 60,50 H 100" fill="none" />
+    </g>
+</svg>

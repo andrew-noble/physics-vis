@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">
+    <g transform="translate(-50,-50)" stroke="#000" stroke-width="2">
+        <!-- Left terminal -->
+        <path d="M 0,50 H 20" fill="none" />
+        <!-- Inductor coils -->
+        <path d="M 20,51 C 20,50 23,30 33,30 C 43,30 43,70 33,70 C 23,70 26,50 35,50 
+                 C 44,50 47,30 57,30 C 67,30 67,70 57,70 C 47,70 50,50 59,50 
+                 C 68,50 71,30 81,30 C 91,30 91,70 81,70 C 71,70 74,50 80,50" fill="none" stroke-linejoin="round" />
+        <!-- Right terminal -->
+        <path d="M 80,50 H 100" fill="none" />
+    </g>
+</svg>
