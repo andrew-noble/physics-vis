@@ -23,18 +23,13 @@ export class Renderer {
   }
 
   private initializeScales(): void {
+    const domain = [-3, 3];
+    const right = this.dimensions.width - this.padding.right;
+    const bottom = this.dimensions.height - this.padding.bottom;
+
     this.scales = {
-      x: d3
-        .scaleLinear()
-        .domain([-10, 10])
-        .range([this.padding.left, this.dimensions.width - this.padding.right]),
-      y: d3
-        .scaleLinear()
-        .domain([-10, 10])
-        .range([
-          this.dimensions.height - this.padding.bottom,
-          this.padding.top,
-        ]),
+      x: d3.scaleLinear().domain(domain).range([this.padding.left, right]),
+      y: d3.scaleLinear().domain(domain).range([bottom, this.padding.top]), //inverted bc y+ is down
     };
   }
 
@@ -43,9 +38,28 @@ export class Renderer {
     this.initializeScales();
   }
 
+  private renderAxes(): void {
+    // Add X axis
+    this.svg
+      .append("g")
+      .attr("class", "x-axis")
+      .attr("transform", `translate(0,${this.scales.y(0)})`)
+      .call(d3.axisBottom(this.scales.x));
+
+    // Add Y axis
+    this.svg
+      .append("g")
+      .attr("class", "y-axis")
+      .attr("transform", `translate(${this.scales.x(0)},0)`)
+      .call(d3.axisLeft(this.scales.y));
+  }
+
   public render(diagram: Diagram): void {
     // Clear previous render
     this.svg.selectAll("*").remove();
+
+    // Render axes
+    this.renderAxes();
 
     // Create main group
     const mainGroup = this.svg.append("g");
@@ -53,15 +67,15 @@ export class Renderer {
     // Render body
     this.renderBody(mainGroup, diagram.body);
 
-    // Render forces
-    diagram.forces.forEach((force: Force) =>
-      this.renderForce(mainGroup, force)
-    );
+    // // Render forces
+    // diagram.forces.forEach((force: Force) =>
+    //   this.renderForce(mainGroup, force)
+    // );
 
-    // Render moments
-    diagram.moments.forEach((moment: Moment) =>
-      this.renderMoment(mainGroup, moment)
-    );
+    // // Render moments
+    // diagram.moments.forEach((moment: Moment) =>
+    //   this.renderMoment(mainGroup, moment)
+    // );
   }
 
   private renderBody(
@@ -75,10 +89,14 @@ export class Renderer {
 
     switch (body.shape) {
       case "rectangle":
+        const width = this.scales.x(2) - this.scales.x(0);
+        const height = this.scales.y(0) - this.scales.y(1);
         bodyGroup
           .append("rect")
-          .attr("width", this.scales.x(2) - this.scales.x(0))
-          .attr("height", this.scales.y(0) - this.scales.y(1))
+          .attr("width", width)
+          .attr("height", height)
+          .attr("x", -width / 2)
+          .attr("y", -height / 2)
           .attr("fill", defaultTheme.backgroundColor)
           .attr("stroke", defaultTheme.gridColor)
           .attr("stroke-width", 2);
