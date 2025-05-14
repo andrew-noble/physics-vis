@@ -6,19 +6,15 @@ export class Renderer {
   private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private dimensions: { width: number; height: number };
   private padding: { top: number; right: number; bottom: number; left: number };
-  private scales: {
-    x: d3.ScaleLinear<number, number>;
-    y: d3.ScaleLinear<number, number>;
-  };
+  private xScale: d3.ScaleLinear<number, number>;
+  private yScale: d3.ScaleLinear<number, number>;
 
   constructor(svgElement: SVGSVGElement) {
     this.svg = d3.select(svgElement);
     this.dimensions = { width: 800, height: 600 };
     this.padding = { top: 40, right: 40, bottom: 40, left: 40 };
-    this.scales = {
-      x: d3.scaleLinear(),
-      y: d3.scaleLinear(),
-    };
+    this.xScale = d3.scaleLinear();
+    this.yScale = d3.scaleLinear();
     this.initializeScales();
   }
 
@@ -27,10 +23,14 @@ export class Renderer {
     const right = this.dimensions.width - this.padding.right;
     const bottom = this.dimensions.height - this.padding.bottom;
 
-    this.scales = {
-      x: d3.scaleLinear().domain(domain).range([this.padding.left, right]),
-      y: d3.scaleLinear().domain(domain).range([bottom, this.padding.top]), //inverted bc y+ is down
-    };
+    this.xScale = d3
+      .scaleLinear()
+      .domain(domain)
+      .range([this.padding.left, right]);
+    this.yScale = d3
+      .scaleLinear()
+      .domain(domain)
+      .range([bottom, this.padding.top]); //inverted bc y+ is down
   }
 
   public updateDimensions(width: number, height: number): void {
@@ -43,15 +43,15 @@ export class Renderer {
     this.svg
       .append("g")
       .attr("class", "x-axis")
-      .attr("transform", `translate(0,${this.scales.y(0)})`)
-      .call(d3.axisBottom(this.scales.x));
+      .attr("transform", `translate(0,${this.yScale(0)})`)
+      .call(d3.axisBottom(this.xScale));
 
     // Add Y axis
     this.svg
       .append("g")
       .attr("class", "y-axis")
-      .attr("transform", `translate(${this.scales.x(0)},0)`)
-      .call(d3.axisLeft(this.scales.y));
+      .attr("transform", `translate(${this.xScale(0)},0)`)
+      .call(d3.axisLeft(this.yScale));
   }
 
   public render(diagram: Diagram): void {
@@ -85,12 +85,12 @@ export class Renderer {
     const bodyGroup = group
       .append("g")
       .attr("class", "body")
-      .attr("transform", `translate(${this.scales.x(0)}, ${this.scales.y(0)})`);
+      .attr("transform", `translate(${this.xScale(0)}, ${this.yScale(0)})`);
 
     switch (body.shape) {
       case "rectangle":
-        const width = this.scales.x(2) - this.scales.x(0);
-        const height = this.scales.y(0) - this.scales.y(1);
+        const width = this.xScale(1.5) - this.xScale(0); //have to convert to pixels vis scale
+        const height = this.yScale(0) - this.yScale(1);
         bodyGroup
           .append("rect")
           .attr("width", width)
@@ -102,7 +102,7 @@ export class Renderer {
           .attr("stroke-width", 2);
         break;
       case "circle":
-        const radius = this.scales.x(1) - this.scales.x(0);
+        const radius = this.xScale(1) - this.xScale(0);
         bodyGroup
           .append("circle")
           .attr("r", radius)
@@ -113,8 +113,8 @@ export class Renderer {
       case "square":
         bodyGroup
           .append("rect")
-          .attr("width", this.scales.x(2) - this.scales.x(0))
-          .attr("height", this.scales.x(2) - this.scales.x(0))
+          .attr("width", this.xScale(2) - this.xScale(0))
+          .attr("height", this.xScale(2) - this.xScale(0))
           .attr("fill", defaultTheme.backgroundColor)
           .attr("stroke", defaultTheme.gridColor)
           .attr("stroke-width", 2);
@@ -177,17 +177,17 @@ export class Renderer {
     // Convert force location to coordinates
     switch (force.location) {
       case "top":
-        return { x: this.scales.x(0), y: this.scales.y(2) };
+        return { x: this.xScale(0), y: this.yScale(2) };
       case "bottom":
-        return { x: this.scales.x(0), y: this.scales.y(-2) };
+        return { x: this.xScale(0), y: this.yScale(-2) };
       case "left":
-        return { x: this.scales.x(-2), y: this.scales.y(0) };
+        return { x: this.xScale(-2), y: this.yScale(0) };
       case "right":
-        return { x: this.scales.x(2), y: this.scales.y(0) };
+        return { x: this.xScale(2), y: this.yScale(0) };
       case "centroid":
-        return { x: this.scales.x(0), y: this.scales.y(0) };
+        return { x: this.xScale(0), y: this.yScale(0) };
       default:
-        return { x: this.scales.x(0), y: this.scales.y(0) };
+        return { x: this.xScale(0), y: this.yScale(0) };
     }
   }
 
@@ -195,17 +195,17 @@ export class Renderer {
     // Similar to getForcePosition but for moments
     switch (moment.location) {
       case "top":
-        return { x: this.scales.x(0), y: this.scales.y(2) };
+        return { x: this.xScale(0), y: this.yScale(2) };
       case "bottom":
-        return { x: this.scales.x(0), y: this.scales.y(-2) };
+        return { x: this.xScale(0), y: this.yScale(-2) };
       case "left":
-        return { x: this.scales.x(-2), y: this.scales.y(0) };
+        return { x: this.xScale(-2), y: this.yScale(0) };
       case "right":
-        return { x: this.scales.x(2), y: this.scales.y(0) };
+        return { x: this.xScale(2), y: this.yScale(0) };
       case "centroid":
-        return { x: this.scales.x(0), y: this.scales.y(0) };
+        return { x: this.xScale(0), y: this.yScale(0) };
       default:
-        return { x: this.scales.x(0), y: this.scales.y(0) };
+        return { x: this.xScale(0), y: this.yScale(0) };
     }
   }
 
