@@ -57,7 +57,7 @@ func getLlmResponse(c *gin.Context) {
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage(req.Prompt),
 		},
-		Model: openai.ChatModelGPT4o,
+		Model: openai.ChatModelO3Mini,
 	})
 
 	if err != nil {
