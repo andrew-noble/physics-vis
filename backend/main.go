@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/invopop/jsonschema"
 	"github.com/joho/godotenv"
@@ -148,6 +149,17 @@ func main() {
 	}
 
 	router := gin.Default()
+	
+	// Configure CORS
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"}, // Vite's default port
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	router.GET("/test", getTest)
 	router.POST("/llm", getLlmResponse)
 	router.POST("/fbd", getFbdResponse)
