@@ -1,6 +1,14 @@
 import * as d3 from "d3";
-import { Diagram, Force, Moment, Body } from "@/types/dataTypes";
+import { Diagram, Force, Moment, Body, BodyShape } from "@/types/dataTypes";
 import { defaultTheme } from "@/types";
+
+interface ShapePositions {
+  top: { x: number; y: number };
+  bottom: { x: number; y: number };
+  left: { x: number; y: number };
+  right: { x: number; y: number };
+  centroid: { x: number; y: number };
+}
 
 export class Renderer {
   private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -8,6 +16,8 @@ export class Renderer {
   private padding: { top: number; right: number; bottom: number; left: number };
   private xScale: d3.ScaleLinear<number, number>;
   private yScale: d3.ScaleLinear<number, number>;
+  private unitLength: number;
+  private origin: { x: number; y: number };
 
   constructor(svgElement: SVGSVGElement) {
     this.svg = d3.select(svgElement);
@@ -15,6 +25,8 @@ export class Renderer {
     this.padding = { top: 40, right: 40, bottom: 40, left: 40 };
     this.xScale = d3.scaleLinear();
     this.yScale = d3.scaleLinear();
+    this.unitLength = 1;
+    this.origin = { x: 0, y: 0 };
     this.initializeScales();
   }
 
@@ -31,6 +43,9 @@ export class Renderer {
       .scaleLinear()
       .domain(domain)
       .range([bottom, this.padding.top]); //inverted bc y+ is down
+
+    this.unitLength = this.xScale(1) - this.xScale(0);
+    this.origin = { x: this.xScale(0), y: this.yScale(0) };
   }
 
   public updateDimensions(width: number, height: number): void {
@@ -58,39 +73,44 @@ export class Renderer {
     // Clear previous render
     this.svg.selectAll("*").remove();
 
-    // Render axes
-    this.renderAxes();
+    // // Render axes
+    // this.renderAxes();
 
     // Create main group
     const mainGroup = this.svg.append("g");
 
-    // Render body
-    this.renderBody(mainGroup, diagram.body);
+    // Render body and get reference to bodyGroup
+    const bodyGroup = this.renderBody(mainGroup, diagram.body);
 
-    // // Render forces
-    // diagram.forces.forEach((force: Force) =>
-    //   this.renderForce(mainGroup, force)
-    // );
+    // Render forces as children of bodyGroup
+    diagram.forces.forEach((force: Force) =>
+      this.renderForce(bodyGroup, force, diagram.body)
+    );
 
-    // // Render moments
-    // diagram.moments.forEach((moment: Moment) =>
-    //   this.renderMoment(mainGroup, moment)
-    // );
+    // Render moments as children of bodyGroup
+    diagram.moments.forEach((moment: Moment) =>
+      this.renderMoment(bodyGroup, moment, diagram.body)
+    );
   }
 
   private renderBody(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
     body: Body
-  ): void {
+  ): d3.Selection<SVGGElement, unknown, null, undefined> {
     const bodyGroup = group
       .append("g")
       .attr("class", "body")
-      .attr("transform", `translate(${this.xScale(0)}, ${this.yScale(0)})`);
+      .attr(
+        "transform",
+        `translate(${this.xScale(0)}, ${this.yScale(0)}) rotate(${-body.angle})`
+      );
 
     switch (body.shape) {
       case "rectangle":
-        const width = this.xScale(1.5) - this.xScale(0); //have to convert to pixels vis scale
-        const height = this.yScale(0) - this.yScale(1);
+        // * 2 so that the edge of the square is unit length from centroid
+
+        const width = this.unitLength * 2 * 1.5; //have to convert to pixels vis scale
+        const height = this.unitLength * 2;
         bodyGroup
           .append("rect")
           .attr("width", width)
@@ -102,7 +122,7 @@ export class Renderer {
           .attr("stroke-width", 2);
         break;
       case "circle":
-        const radius = this.xScale(1) - this.xScale(0);
+        const radius = this.unitLength;
         bodyGroup
           .append("circle")
           .attr("r", radius)
@@ -113,7 +133,8 @@ export class Renderer {
           .attr("stroke-width", 2);
         break;
       case "square":
-        const side = this.xScale(1) - this.xScale(0);
+        // * 2 so that the edge of the square is unit length from centroid
+        const side = this.unitLength * 2;
         bodyGroup
           .append("rect")
           .attr("width", side)
@@ -124,47 +145,55 @@ export class Renderer {
           .attr("stroke", defaultTheme.gridColor)
           .attr("stroke-width", 2);
     }
+    return bodyGroup;
   }
 
   private renderForce(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
-    force: Force
+    force: Force,
+    body: Body
   ): void {
     const forceGroup = group.append("g").attr("class", "force");
 
     // Calculate force position based on location
-    const position = this.getForcePosition(force);
+    const tailPosition = this.getForceTailPosition(force, body);
 
     // Create arrow with marker
     forceGroup
       .append("path")
-      .attr("d", this.createArrowPath(force, position))
+      .attr("d", this.createArrowPath(force, body)) // Draw the path
+      .attr(
+        //place the path
+        "transform",
+        `translate(${tailPosition.x}, ${tailPosition.y})`
+      ) // Move to tail and rotate with body
       .attr("fill", "none")
       .attr("stroke", defaultTheme.defaultArrowConfig.color)
       .attr("stroke-width", defaultTheme.defaultArrowConfig.strokeWidth);
 
-    // Add label
-    this.addLabel(
-      forceGroup,
-      force.label,
-      position,
-      defaultTheme.defaultLabelConfig
-    );
+    // // Add label
+    // this.addLabel(
+    //   forceGroup,
+    //   force.label,
+    //   tailPosition,
+    //   defaultTheme.defaultLabelConfig
+    // );
   }
 
   private renderMoment(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
-    moment: Moment
+    moment: Moment,
+    body: Body
   ): void {
     const momentGroup = group.append("g").attr("class", "moment");
 
     // Calculate moment position based on location
-    const position = this.getMomentPosition(moment);
+    const position = this.getMomentPosition(moment, body);
 
     // Create moment arc
     momentGroup
       .append("path")
-      .attr("d", this.createMomentPath(moment))
+      .attr("d", this.createMomentPath(moment, position))
       .attr("fill", "none")
       .attr("stroke", defaultTheme.defaultMomentConfig.color)
       .attr("stroke-width", defaultTheme.defaultMomentConfig.strokeWidth);
@@ -178,56 +207,71 @@ export class Renderer {
     );
   }
 
-  private getForcePosition(force: Force): { x: number; y: number } {
-    // Convert force location to coordinates
-    switch (force.location) {
-      case "top":
-        return { x: this.xScale(0), y: this.yScale(2) };
-      case "bottom":
-        return { x: this.xScale(0), y: this.yScale(-2) };
-      case "left":
-        return { x: this.xScale(-2), y: this.yScale(0) };
-      case "right":
-        return { x: this.xScale(2), y: this.yScale(0) };
-      case "centroid":
-        return { x: this.xScale(0), y: this.yScale(0) };
-      default:
-        return { x: this.xScale(0), y: this.yScale(0) };
+  private getShapePositions(shape: BodyShape): ShapePositions {
+    // All positions are now local to the body (centered at 0,0)
+    const basePositions: ShapePositions = {
+      top: { x: 0, y: -this.unitLength },
+      bottom: { x: 0, y: this.unitLength },
+      left: { x: -this.unitLength, y: 0 },
+      right: { x: this.unitLength, y: 0 },
+      centroid: { x: 0, y: 0 },
+    };
+
+    switch (shape) {
+      case "rectangle":
+        return {
+          ...basePositions,
+          left: {
+            x: (-this.unitLength * 1.5) / 2,
+            y: 0,
+          },
+          right: {
+            x: (this.unitLength * 1.5) / 2,
+            y: 0,
+          },
+        };
+      case "circle":
+      case "square":
+        return basePositions;
     }
   }
 
-  private getMomentPosition(moment: Moment): { x: number; y: number } {
-    // Similar to getForcePosition but for moments
-    switch (moment.location) {
-      case "top":
-        return { x: this.xScale(0), y: this.yScale(2) };
-      case "bottom":
-        return { x: this.xScale(0), y: this.yScale(-2) };
-      case "left":
-        return { x: this.xScale(-2), y: this.yScale(0) };
-      case "right":
-        return { x: this.xScale(2), y: this.yScale(0) };
-      case "centroid":
-        return { x: this.xScale(0), y: this.yScale(0) };
-      default:
-        return { x: this.xScale(0), y: this.yScale(0) };
-    }
-  }
-
-  private createArrowPath(
+  private getForceTailPosition(
     force: Force,
+    body: Body
+  ): { x: number; y: number } {
+    // No need to rotate or translate, as all positions are now local to the body
+    const positions = this.getShapePositions(body.shape);
+    return positions[force.location];
+  }
+
+  private getMomentPosition(
+    moment: Moment,
+    body: Body
+  ): { x: number; y: number } {
+    // No need to rotate or translate, as all positions are now local to the body
+    const positions = this.getShapePositions(body.shape);
+    return positions[moment.location];
+  }
+
+  // this creates an arrow pointing in the right direction, located at the origin
+  // just creates the path, doesn't place it
+  private createArrowPath(force: Force, body: Body): string {
+    const length = this.unitLength; // Arrow length
+    // Use force.angle relative to the body (local coordinates)
+    const localAngle = force.angle - body.angle;
+    const angle = (-localAngle * Math.PI) / 180; // Negate angle for SVG y-axis
+
+    const endX = length * Math.cos(angle);
+    const endY = length * Math.sin(angle);
+
+    return `M 0 0 L ${endX} ${endY}`;
+  }
+
+  private createMomentPath(
+    moment: Moment,
     position: { x: number; y: number }
   ): string {
-    const length = 50; // Arrow length
-    const angle = (force.angle * Math.PI) / 180;
-
-    const endX = position.x + length * Math.cos(angle);
-    const endY = position.y + length * Math.sin(angle);
-
-    return `M ${position.x} ${position.y} L ${endX} ${endY}`;
-  }
-
-  private createMomentPath(moment: Moment): string {
     const radius = defaultTheme.defaultMomentConfig.arcRadius;
     const startAngle = 0;
     const endAngle = moment.direction === "cw" ? -Math.PI : Math.PI;
@@ -264,5 +308,22 @@ export class Renderer {
       .attr("font-size", config.fontSize)
       .attr("fill", config.color)
       .text(text);
+  }
+
+  // Helper to rotate a point around a center by angleDeg degrees
+  private rotatePoint(
+    point: { x: number; y: number },
+    center: { x: number; y: number },
+    angleDeg: number
+  ): { x: number; y: number } {
+    const angleRad = (angleDeg * Math.PI) / 180;
+    const cos = Math.cos(angleRad);
+    const sin = Math.sin(angleRad);
+    const dx = point.x - center.x;
+    const dy = point.y - center.y;
+    return {
+      x: center.x + dx * cos - dy * sin,
+      y: center.y + dx * sin + dy * cos,
+    };
   }
 }
