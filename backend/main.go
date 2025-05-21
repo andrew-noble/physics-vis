@@ -57,7 +57,7 @@ func getLlmResponse(c *gin.Context) {
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage(req.Prompt),
 		},
-		Model: openai.ChatModelO3Mini,
+		Model: "o3-2025-04-16", //only model that has been totally reliable
 	})
 
 	if err != nil {

@@ -166,7 +166,7 @@ export class Renderer {
         //place the path
         "transform",
         `translate(${tailPosition.x}, ${tailPosition.y})`
-      ) // Move to tail and rotate with body
+      )
       .attr("fill", "none")
       .attr("stroke", defaultTheme.defaultArrowConfig.color)
       .attr("stroke-width", defaultTheme.defaultArrowConfig.strokeWidth);
@@ -175,7 +175,10 @@ export class Renderer {
     // this.addLabel(
     //   forceGroup,
     //   force.label,
-    //   tailPosition,
+    //   {
+    //     x: tailPosition.x + 40 * Math.cos(force.angle),
+    //     y: tailPosition.y + 40 * Math.sin(force.angle),
+    //   },
     //   defaultTheme.defaultLabelConfig
     // );
   }
@@ -254,18 +257,25 @@ export class Renderer {
     return positions[moment.location];
   }
 
-  // this creates an arrow pointing in the right direction, located at the origin
-  // just creates the path, doesn't place it
+  //SOMETHING IS FUCKED HERE
+  // I don't like this approach. We already have global force angles
+  // why is body even involved here?
   private createArrowPath(force: Force, body: Body): string {
     const length = this.unitLength; // Arrow length
     // Use force.angle relative to the body (local coordinates)
-    const localAngle = force.angle - body.angle;
+    const localAngle = force.angle - body.angle; //WTF???
     const angle = (-localAngle * Math.PI) / 180; // Negate angle for SVG y-axis
 
     const endX = length * Math.cos(angle);
     const endY = length * Math.sin(angle);
 
-    return `M 0 0 L ${endX} ${endY}`;
+    const arrowHead1X = endX - 0.1 * length * Math.cos(angle + 70);
+    const arrowHead1Y = endY - 0.1 * length * Math.sin(angle + 70);
+
+    const arrowHead2X = endX - 0.1 * length * Math.cos(angle - 70);
+    const arrowHead2Y = endY - 0.1 * length * Math.sin(angle - 70);
+
+    return `M 0 0 L ${endX} ${endY} L ${arrowHead1X} ${arrowHead1Y} M ${endX} ${endY} L ${arrowHead2X} ${arrowHead2Y}`;
   }
 
   private createMomentPath(

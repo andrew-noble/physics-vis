@@ -1,11 +1,13 @@
 import "./index.css";
 import DiagramViewer from "./components/DiagramViewer";
 import { useState } from "react";
+import { sampleDiagram } from "./data/sampleDiagram";
+import { Force } from "./types/dataTypes";
 
 const API_URL = "http://localhost:8080";
 
 export default function App() {
-  const [diagramData, setDiagramData] = useState<any>(null);
+  const [diagramData, setDiagramData] = useState<any>(sampleDiagram);
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function App() {
 
   return (
     <>
-      <div className="circuit-form-container">
+      <div>
         <form onSubmit={handleSubmit} className="circuit-form">
           <div className="form-group">
             <label htmlFor="circuit-prompt">Generate a FBD</label>
@@ -56,11 +58,17 @@ export default function App() {
             disabled={isLoading || !prompt.trim()}
             className="form-button"
           >
-            {isLoading ? <p>Generating...</p> : "Generate Circuit"}
+            {isLoading ? <p>Generating...</p> : "Generate Diagram"}
           </button>
         </form>
       </div>
       <DiagramViewer diagramData={diagramData} />
+      <ul>
+        {diagramData &&
+          diagramData.forces.map((force: Force, index: number) => (
+            <li key={index}>{force.name}</li>
+          ))}
+      </ul>
     </>
   );
 }

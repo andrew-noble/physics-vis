@@ -36,22 +36,22 @@ export interface DiagramTheme {
 
 export const defaultArrowConfig: ArrowConfig = {
   color: "#1f77b4", // D3 default blue
-  strokeWidth: 2,
+  strokeWidth: 4,
   dashPattern: undefined,
 };
 
 export const defaultMomentConfig: MomentConfig = {
   color: "#2ca02c", // D3 default green
-  strokeWidth: 2,
+  strokeWidth: 4,
   arcRadius: 20,
   dashPattern: undefined,
 };
 
 export const defaultLabelConfig: LabelConfig = {
-  fontSize: 14,
+  fontSize: 30,
   fontFamily: "Arial, sans-serif",
   color: "#000000",
-  offset: { x: 10, y: 10 },
+  offset: { x: 25, y: 25 },
 };
 
 export const defaultTheme: DiagramTheme = {
