@@ -16,21 +16,35 @@ frontend/yarn.lock # optional, if you use npm only
 frontend/package-lock.json # optional, if you use yarn only
 frontend/.vite
 
-# === Go Backend ===
-backend/bin/
+# === Python/FastAPI Backend ===
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/*.so
+backend/.Python
 backend/build/
-backend/coverage/
-backend/*.exe
-backend/*.test
-backend/*.out
-backend/go.sum
+backend/develop-eggs/
+backend/dist/
+backend/downloads/
+backend/eggs/
+backend/.eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/wheels/
+backend/*.egg-info/
+backend/.installed.cfg
+backend/*.egg
 backend/.env*
 backend/logs/
-
-# Go generated files
-*.exe
-*.test
-*.out
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.venv/
+backend/venv/
+backend/ENV/
 
 # === OS Junk ===
 .DS_Store
