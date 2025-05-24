@@ -4,47 +4,42 @@ dist/
 build/
 .env
 .env.*
+logs/
 
-# === React/TypeScript Frontend ===
-frontend/node_modules/
-frontend/dist/
-frontend/build/
-frontend/.next/
-frontend/.turbo/
-frontend/.env*
-frontend/yarn.lock # optional, if you use npm only
-frontend/package-lock.json # optional, if you use yarn only
-frontend/.vite
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+ENV/
 
-# === Python/FastAPI Backend ===
-backend/__pycache__/
-backend/*.py[cod]
-backend/*$py.class
-backend/*.so
-backend/.Python
-backend/build/
-backend/develop-eggs/
-backend/dist/
-backend/downloads/
-backend/eggs/
-backend/.eggs/
-backend/lib/
-backend/lib64/
-backend/parts/
-backend/sdist/
-backend/var/
-backend/wheels/
-backend/*.egg-info/
-backend/.installed.cfg
-backend/*.egg
-backend/.env*
-backend/logs/
-backend/.pytest_cache/
-backend/.coverage
-backend/htmlcov/
-backend/.venv/
-backend/venv/
-backend/ENV/
+# === Frontend ===
+.next/
+.turbo/
+.vite
+yarn.lock
+package-lock.json
 
 # === OS Junk ===
 .DS_Store
