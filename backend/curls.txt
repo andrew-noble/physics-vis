@@ -1,5 +1,0 @@
-curl -X GET http://localhost:8080/test
-
-curl -X POST -H "Content-Type: application/json" -d '{"prompt": "your prompt here"}' http://localhost:8080/llm
-
-curl -X POST -H "Content-Type: application/json" -d '{"prompt": "your prompt here"}' http://localhost:8080/getFbdResponse | jq

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { sampleDiagram } from "./data/sampleDiagram";
 import { Force } from "./types/dataTypes";
 
-const API_URL = "http://localhost:8080";
+const API_URL = "http://localhost:8000";
 
 export default function App() {
   const [diagramData, setDiagramData] = useState<any>(sampleDiagram);

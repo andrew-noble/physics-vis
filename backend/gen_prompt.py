@@ -1,6 +1,4 @@
-package main
-
-var FbdGenerationSystemPrompt = `
+generation_system_prompt = """
 You are a helpful assistant that generates two-dimensional free body diagrams.
 
 You will be given a JSON schema that describes a free body diagram with its body, forces, moments, and axes.
@@ -18,4 +16,4 @@ Defaults:
 	- This also means that the friction force is never at the centroid, it will always be at a face.
 - For tension, use the symbol T, and make sure it is in the direction of the string or rope.
 - For weight, use the symbol mg, and make sure it is vertical and downward (270 degrees from the positive x-axis).
-`
+"""
