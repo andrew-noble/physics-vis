@@ -8,8 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from schemas.fbd import Fbd
-from schemas.responses import AgentResponse
-from schemas.requests import AgentRequest, FbdGenerationRequest
+from schemas.api import AgentResponse, AgentRequest, FbdGenerationRequest
 from prompts.agent_prompt import agent_prompt
 from prompts.fbd_generation_prompt import fbd_generation_prompt
 from req_logging import log_fbd_generation
@@ -44,57 +43,50 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight requests for 10 minutes
 )
 
 # Initialize OpenAI client
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+@app.get("/test-cors")
+async def test_cors():
+    return {"message": "CORS is working!"}
+
 @app.get("/test")
 @limiter.limit("5/minute")
 async def test(request: Request):
     return {"message": "Hello, World!"}
-
-@app.post("/fbd", response_model=Fbd)
-@limiter.limit("10/minute")
-async def generate_fbd_endpoint(request: Request, data: FbdGenerationRequest):
-    api_start_time = time.perf_counter()
-    try:
-        response = await client.beta.chat.completions.parse(
-            model=DIAGRAM_CREATION_MODEL,
-            messages=[{"role": "system", "content": fbd_generation_prompt}, {"role": "user", "content": data.prompt}],
-            response_format=Fbd
-        )
-        fbd_data_dict = json.loads(response.choices[0].message.content)
-        api_duration = time.perf_counter() - api_start_time
-
-        log.info(f"API duration: {api_duration} with model {DIAGRAM_CREATION_MODEL}")
-
-        log_fbd_generation(
-            endpoint="/generated",
-            system_prompt=fbd_generation_prompt,
-            user_prompt=data.prompt,
-            response_data=fbd_data_dict,
-            model=DIAGRAM_CREATION_MODEL,
-            api_duration=api_duration
-        )
-
-        return Fbd(**fbd_data_dict)
-    except ValidationError as e:
-        log.info(e)
-        raise HTTPException(status_code=422, detail=str(e))
-    except Exception as e:
-        log.info(e)
-        raise HTTPException(status_code=500, detail=str(e))
     
+def trim_context(messages: list, max_messages: int = 10) -> list:
+    """Keep only the most recent messages while preserving system message."""
+    if len(messages) <= max_messages:
+        return messages
+    
+    # Always keep the system message
+    system_message = messages[0]
+    # Get the most recent messages
+    recent_messages = messages[-max_messages+1:]
+    return [system_message, *recent_messages]
+
+def add_diagram_data(messages: list, diagram_data: Fbd) -> list:
+    """Add diagram data to the context."""
+    messages[-1].content += f"\n\nCurrent diagram data: {diagram_data}"
+    return messages
+
 @app.post("/agent", response_model=AgentResponse)
 @limiter.limit("10/minute")
-async def agent_endpoint(request: Request, data: AgentRequest):
+async def agent_endpoint(request: Request, data: AgentRequest = Body(...)):
 
-    messages = [{"role": "system", "content": agent_prompt}, {"role": "user", "content": data.prompt}]
+    messages = [{"role": "system", "content": agent_prompt}, *data.messages]
+    messages = trim_context(messages)  # Apply rolling window
+    messages = add_diagram_data(messages, data.diagramData)
+    tool_result = {}  # Initialize tool_result
 
     try:
         while True:
