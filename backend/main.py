@@ -84,6 +84,15 @@ async def agent_endpoint(request: Request, data: AgentRequest = Body(...)):
     messages = add_diagram_data(messages, data.diagramData)
     tool_result = {}  # Initialize tool_result
 
+
+    # TODO:
+        # We'll need to manage tool results a bit better, rn we're hardcoded to send the final tool result
+        # maybe an ephemeral list of tool results per agent call?
+
+        # we'll want to implement streaming:
+            # stream tool call events for frontend ux
+            # stream final message like a normal ai chatbot
+
     try:
         while True:
             # think
