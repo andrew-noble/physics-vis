@@ -4,7 +4,9 @@ import os
 import json
 import datetime
 from fastapi import FastAPI, HTTPException, Body, Request
+from typing import AsyncGenerator
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from schemas.fbd import Fbd
@@ -82,60 +84,98 @@ async def agent_endpoint(request: Request, data: AgentRequest = Body(...)):
     messages = [{"role": "system", "content": agent_prompt}, *data.messages]
     messages = trim_context(messages)  # Apply rolling window
     messages = add_diagram_data(messages, data.diagramData)
-    tool_result = {}  # Initialize tool_result
+
+    # helper function for streaming responses
+    def sse_event(event_type, data):
+        # event: <type>\ndata: <json>\n\n
+        return f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
 
 
-    # TODO:
-        # We'll need to manage tool results a bit better, rn we're hardcoded to send the final tool result
-        # maybe an ephemeral list of tool results per agent call?
+    async def event_stream() -> AsyncGenerator[str, None]:
+        nonlocal messages
 
-        # we'll want to implement streaming:
-            # stream tool call events for frontend ux
-            # stream final message like a normal ai chatbot
+        try:
+            while True:
+                # think
+                response = await client.chat.completions.create(
+                    model=AGENT_MODEL,
+                    messages=messages,
+                    tools=tool_list_for_llm,
+                    stream=True,
+                )
 
-    try:
-        while True:
-            # think
-            response = await client.chat.completions.create(
-                model=AGENT_MODEL,
-                messages=messages,
-                tools=tool_list_for_llm,
-            )
+                pending_calls: dict[int, dict] = {}   # index → {id, name, arguments}
+                announced: set[int] = set()           # to avoid duplicate "tool_call" events
 
-            # act
-            if response.choices[0].message.tool_calls:
-                for tool_call in response.choices[0].message.tool_calls:
+                # must be async bc the response object is an async iterator
+                async for chunk in response:
+                    delta = chunk.choices[0].delta
+
+                    # if just a message shard, emit. (may need to buffer later)
+                    if delta.content:
+                        yield sse_event("message", delta.content)
+
+                    # if tool shard, compile into complete calls and emit once per call
+                    for tc in (delta.tool_calls or []):
+                        entry = pending_calls.setdefault(tc.index,
+                                                        {"id": None, "name": None, "arguments": ""})
+
+                        if tc.id:
+                            entry["id"] = tc.id
+                        if tc.function.arguments:
+                            entry["arguments"] += tc.function.arguments
+                        if tc.function.name:
+                            entry["name"] = tc.function.name
+                            if tc.index not in announced:          # first shard with a name
+                                announced.add(tc.index)
+                                yield sse_event("tool_call", {"name": entry["name"]})
+          
+                # if no tool calls, the agent is done
+                if not pending_calls:
+                    break
+                
+                # act - run the tool calls
+                for tool_call in pending_calls.values():
                     try:
-                        tool_call_id = tool_call.id
-                        tool_name = tool_call.function.name
-                        tool_args = json.loads(tool_call.function.arguments)
+                        tool_id = tool_call["id"]
+                        tool_name = tool_call["name"]
+                        tool_args = json.loads(tool_call["arguments"])
+                        
+                        # Append the model's function call message to context
+                        messages.append({
+                            "role": "assistant",
+                            "tool_calls": [{
+                                "id": tool_id,
+                                "type": "function",
+                                "function": {
+                                    "name": tool_name,
+                                    "arguments": tool_call["arguments"]
+                                }
+                            }]
+                        })
+                        
                         tool_func = tool_handlers[tool_name]
                         tool_result = await tool_func(tool_args)
 
-                        # observe 1: add tool call message to context
-                        messages.append(response.choices[0].message)
-                        
-                    except Exception as e:
-                        log.info(f"Tool error ({tool_name}): {str(e)}")
-                        raise HTTPException(status_code=400, detail=f"Error calling tool: {tool_name}")
-                    
-                    log.info(f"Tool result: {tool_result}")
-                    
-                # observe 2: add tool result to context
-                messages.append({"role": "tool", "tool_call_id": tool_call_id, "content": json.dumps(tool_result)})
-            
-            # stop
-            else:
-                break
+                        # Append the tool result message to context
+                        messages.append({"role": "tool", "tool_call_id": tool_id, "content": json.dumps(tool_result)})
 
-    except Exception as e:
-        log.info(f"Agent error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Agent error: {str(e)}")
-    
-    return AgentResponse(
-        message=response.choices[0].message.content,
-        diagramData=tool_result or None
-    )
+
+                        log.info(f"Tool called: {tool_name} with args: {tool_args} and result: {tool_result}")
+
+                        # emit tool result to client
+                        yield sse_event("tool_result", {"name": tool_name, "result": tool_result})
+
+                    except Exception as e:
+                        log.info(f"Tool error: {str(e)}")
+                        raise HTTPException(status_code=400, detail=f"Error calling tool: {str(e)}")
+
+        except Exception as e:
+            log.info(f"Agent error: {str(e)}")
+            
+            raise HTTPException(status_code=500, detail=f"Agent error: {str(e)}")
+        
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 # uvicorn is a webserver, sorta like node. (asynchronous server gateway node, asgn)
 if __name__ == "__main__":

@@ -21,9 +21,15 @@ Tools:
 
 Not all questions or messages will necessitate tool calls to change the whiteboard, in which case you should just answer the question.
 
-If a tool call is required, only make a single tool call per message.
+You may make multiple tool calls per turn, but limit each diagram type (e.g., FBD, graph) to a single update or creation per turn. Do not modify the same diagram type more than once in the same turn.
+
+The diagram type can be inferred from the tool name.
 
 You may have to output LaTeX to teach the student how to analyze a situation with mathematics. 
 """
 
-# we might need to address the single tool call issue. 
+# multi tool calls?
+    # may require more thought.
+    # if we get to multi-diagram, then the model needs to know it can only emit each diagram type once per turn (because otherwise overwrite)
+# we should make the instructions in here minimize burden on the diagram LLM calls.
+    # this is the smart model, those should be hand held, don't make them assume anything
