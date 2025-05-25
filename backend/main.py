@@ -125,7 +125,7 @@ async def agent_endpoint(request: Request, data: AgentRequest = Body(...)):
     
     return AgentResponse(
         message=response.choices[0].message.content,
-        data=tool_result or {}
+        diagramData=tool_result or None
     )
 
 # uvicorn is a webserver, sorta like node. (asynchronous server gateway node, asgn)
