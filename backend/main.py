@@ -54,10 +54,6 @@ app.add_middleware(
 # Initialize OpenAI client
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-@app.get("/test-cors")
-async def test_cors():
-    return {"message": "CORS is working!"}
-
 @app.get("/test")
 @limiter.limit("5/minute")
 async def test(request: Request):
