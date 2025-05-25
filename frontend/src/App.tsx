@@ -2,73 +2,79 @@ import "./index.css";
 import DiagramViewer from "./components/DiagramViewer";
 import { useState } from "react";
 import { sampleDiagram } from "./data/sampleDiagram";
-import { Force } from "./types/dataTypes";
+import ChatInterface from "./components/chat-interface/ChatInterface";
+import { MessageType } from "./types/chatUiTypes";
 
 const API_URL = "http://localhost:8000";
 
 export default function App() {
   const [diagramData, setDiagramData] = useState<any>(sampleDiagram);
-  const [prompt, setPrompt] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState<MessageType[]>([]);
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+  const handleSendMessage = async (
+    newMessageText: string,
+    currentMessages: MessageType[]
+  ) => {
+    setMessages((existingMessages) => [
+      ...existingMessages,
+      { id: crypto.randomUUID(), role: "user", content: newMessageText },
+    ]);
+    setPending(true);
 
     try {
-      const response = await fetch(`${API_URL}/fbd`, {
+      const payload = {
+        messages: [
+          ...currentMessages,
+          { id: crypto.randomUUID(), role: "user", content: newMessageText },
+        ],
+        diagramData: diagramData,
+      };
+
+      // (eventually) preflight post (do streaming)
+      const response = await fetch(`${API_URL}/agent`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify(payload),
       });
+
       if (!response.ok) {
+        setError(`HTTP error! status: ${response.status}`);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      setDiagramData(data);
-      setIsLoading(false);
+
+      const res = await response.json();
+
+      setMessages((existingMessages) => [
+        ...existingMessages,
+        { id: crypto.randomUUID(), role: "assistant", content: res.message },
+      ]);
+
+      console.log(res.diagramData);
+
+      setDiagramData(res.diagramData);
+
+      // return?? Naw i don't think so?
     } catch (error) {
-      console.error("Failed to fetch circuit:", error);
+      console.error("Failed to send message:", error);
+      return currentMessages;
+    } finally {
+      setPending(false);
     }
   };
 
   return (
     <>
-      <div>
-        <form onSubmit={handleSubmit} className="circuit-form">
-          <div className="form-group">
-            <label htmlFor="circuit-prompt">Generate a FBD</label>
-            <textarea
-              id="circuit-prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Example: Create a FBD"
-              rows={3}
-              disabled={isLoading}
-              className="form-control"
-            />
-          </div>
-          {error && <div className="error-message">{error}</div>}
-          <button
-            type="submit"
-            disabled={isLoading || !prompt.trim()}
-            className="form-button"
-          >
-            {isLoading ? <p>Generating...</p> : "Generate Diagram"}
-          </button>
-        </form>
-      </div>
+      <ChatInterface
+        messages={messages}
+        pending={pending}
+        onSendMessage={handleSendMessage}
+      />
       <DiagramViewer diagramData={diagramData} />
-      <ul>
-        {diagramData &&
-          diagramData.forces.map((force: Force, index: number) => (
-            <li key={index}>{force.name}</li>
-          ))}
-      </ul>
+      <p>{error}</p>
     </>
   );
 }
