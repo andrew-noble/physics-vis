@@ -2,7 +2,6 @@
 
 import os
 import json
-import datetime
 from fastapi import FastAPI, HTTPException, Request
 from typing import AsyncGenerator
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,10 +10,7 @@ from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from schemas.fbd import Fbd
 from schemas.api import AgentRequest, StreamSession
-from prompts.agent_prompt import agent_prompt
-from req_logging import log_fbd_draw
 from utils.message_utils import trim_context, inject_diagram_data
-import time
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
