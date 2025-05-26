@@ -116,7 +116,7 @@ export default function App() {
   };
 
   return (
-    <>
+    <div className="flex h-screen">
       <ChatInterface
         messages={messages}
         pending={pending}
@@ -124,6 +124,6 @@ export default function App() {
       />
       <DiagramViewer diagramData={diagramData} />
       <p>{error}</p>
-    </>
+    </div>
   );
 }
