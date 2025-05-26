@@ -116,14 +116,15 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen">
-      <ChatInterface
-        messages={messages}
-        pending={pending}
-        onSendMessage={handleSendMessage}
-      />
+    <div className="fixed inset-0 grid grid-cols-2">
       <DiagramViewer diagramData={diagramData} />
-      <p>{error}</p>
+      <div className="overflow-y-auto">
+        <ChatInterface
+          messages={messages}
+          pending={pending}
+          onSendMessage={handleSendMessage}
+        />
+      </div>
     </div>
   );
 }
