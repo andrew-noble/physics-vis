@@ -13,7 +13,7 @@ export function InputBox({ onSubmit, disabled = false }: InputBoxProps) {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() || disabled) return;
     onSubmit?.(text);
     setText("");
   };

@@ -9,7 +9,7 @@ export interface ChatInterfaceProps {
    * Called when the user submits text.
    * Return an updated messages array (e.g. streamed or full reply) or undefined if you mutate elsewhere.
    */
-  onSendMessage?: (messageText: string, currentMessages: MessageType[]) => void;
+  onSendMessage: (messageText: string) => void;
 }
 
 export default function ChatInterface({
@@ -20,7 +20,7 @@ export default function ChatInterface({
   const handleSend = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || pending) return;
-    onSendMessage?.(trimmed, messages);
+    onSendMessage(trimmed);
   };
 
   return (

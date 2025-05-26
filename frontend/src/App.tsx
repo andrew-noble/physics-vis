@@ -13,10 +13,8 @@ export default function App() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSendMessage = async (
-    newMessageText: string,
-    currentMessages: MessageType[]
-  ) => {
+  const handleSendMessage = async (newMessageText: string) => {
+    // store user's message
     setMessages((existingMessages) => [
       ...existingMessages,
       { id: crypto.randomUUID(), role: "user", content: newMessageText },
@@ -26,14 +24,21 @@ export default function App() {
     try {
       const payload = {
         messages: [
-          ...currentMessages,
+          ...messages,
           { id: crypto.randomUUID(), role: "user", content: newMessageText },
         ],
         diagramData: diagramData,
       };
 
-      // (eventually) preflight post (do streaming)
-      const response = await fetch(`${API_URL}/agent`, {
+      // prepare new assistant message husk
+      const assistantMessageId = crypto.randomUUID();
+      setMessages((existingMessages) => [
+        ...existingMessages,
+        { id: assistantMessageId, role: "assistant", content: "" },
+      ]);
+
+      // request event streaming session
+      const response = await fetch(`${API_URL}/stream-sessions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,21 +51,70 @@ export default function App() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const res = await response.json();
+      const sessionId = (await response.json()).sessionId;
 
-      setMessages((existingMessages) => [
-        ...existingMessages,
-        { id: crypto.randomUUID(), role: "assistant", content: res.message },
-      ]);
+      // streaming response
+      const eventSource = new EventSource(
+        `${API_URL}/stream-sessions/${sessionId}/events`,
+        {
+          withCredentials: true,
+        }
+      );
 
-      console.log(res.diagramData);
+      // handle ai message shards
+      eventSource.addEventListener("ai_message_shard", (event) => {
+        const shard = JSON.parse(event.data);
 
-      setDiagramData(res.diagramData);
+        setMessages((existingMessages) => {
+          const content = existingMessages.find(
+            (message) => message.id === assistantMessageId
+          )?.content;
 
-      // return?? Naw i don't think so?
+          const newContent = content + shard;
+
+          return existingMessages.map((m) => {
+            if (m.id === assistantMessageId) {
+              return {
+                ...m,
+                content: newContent,
+              };
+            } else {
+              return m;
+            }
+          });
+        });
+      });
+
+      eventSource.onmessage = (event) => {
+        console.log("message", event.data);
+      };
+
+      // handle tool calls
+      eventSource.addEventListener("tool_call", (event) => {
+        console.log("tool call", event.data);
+      });
+
+      // handle tool results
+      // TODO: this will likely need to change if/when we have tool results that arent diagramData
+      eventSource.addEventListener("tool_result", (event) => {
+        setDiagramData(event.data.result);
+      });
+
+      // Critical otherwise eventSource will try and reconnect
+      eventSource.addEventListener("complete", () => {
+        eventSource.close();
+      });
+
+      // Also good practice to handle errors
+      eventSource.onerror = (error) => {
+        console.error("EventSource error:", error);
+        eventSource.close();
+      };
+
+      // return smth?? Naw i don't think so?
     } catch (error) {
       console.error("Failed to send message:", error);
-      return currentMessages;
+      return messages;
     } finally {
       setPending(false);
     }
