@@ -7,9 +7,6 @@ class MessageType(BaseModel):
     role: str
     content: str
 
-class FbdGenerationRequest(BaseModel):
-    prompt: str
-
 class AgentRequest(BaseModel):
     messages: List[MessageType]
     diagramData: Optional[Fbd] = None

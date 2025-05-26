@@ -5,9 +5,11 @@ API_V1_PREFIX = "/api/v1"
 PROJECT_NAME = "Physics Visualization API"
 
 # Model Choices
-DIAGRAM_CREATION_MODEL = "o3-mini"
-DIAGRAM_UPDATE_MODEL = "o3-mini"
+FBD_MODEL = "o3-mini"
 AGENT_MODEL = "gpt-4.1"
+
+# Context Constants
+MAX_CONTEXT_MESSAGES = 20
 
 # Server Constants
 DEFAULT_HOST = "0.0.0.0"

@@ -10,19 +10,17 @@ from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from schemas.fbd import Fbd
-from schemas.api import AgentResponse, AgentRequest, FbdGenerationRequest, StreamSession
+from schemas.api import AgentRequest, StreamSession
 from prompts.agent_prompt import agent_prompt
-from prompts.fbd_generation_prompt import fbd_generation_prompt
-from req_logging import log_fbd_generation
-from pydantic import ValidationError
-from fastapi.responses import JSONResponse
+from req_logging import log_fbd_draw
+from utils.message_utils import trim_context, inject_diagram_data
 import time
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import logging
 from tools.tool_list import tool_list_for_llm, tool_handlers
-from constants import DIAGRAM_CREATION_MODEL, AGENT_MODEL
+from constants import AGENT_MODEL, ALLOWED_ORIGINS, DEFAULT_HOST, DEFAULT_PORT
 import sys
 import uuid
 
@@ -46,7 +44,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -64,22 +62,6 @@ stream_sessions: dict[str, dict] = {}
 async def test():
     return {"message": "Hello, World!"}
     
-def trim_context(messages: list, max_messages: int = 10) -> list:
-    """Keep only the most recent messages while preserving system message."""
-    if len(messages) <= max_messages:
-        return messages
-    
-    # Always keep the system message
-    system_message = messages[0]
-    # Get the most recent messages
-    recent_messages = messages[-max_messages+1:]
-    return [system_message, *recent_messages]
-
-def add_diagram_data(messages: list, diagram_data: Fbd) -> list:
-    """Add diagram data to the context."""
-    messages[-1].content += f"\n\nCurrent diagram data: {diagram_data}"
-    return messages
-
 @app.post("/stream-sessions", response_model=StreamSession)
 @limiter.limit("10/minute") # limiter needs the Request, even if we don't use
 def request_stream_session(request: Request, data: AgentRequest) -> StreamSession:
@@ -88,7 +70,7 @@ def request_stream_session(request: Request, data: AgentRequest) -> StreamSessio
 
     # prep messages by applying rolling window and injecting diagram
     messages = trim_context(data.messages)
-    messages = add_diagram_data(messages, data.diagramData)
+    messages = inject_diagram_data(messages, data.diagramData)
 
     # store session
     stream_sessions[session_id] = {
@@ -206,4 +188,4 @@ async def receive_event_stream(request: Request, session_id: str):
 # uvicorn is a webserver, sorta like node. (asynchronous server gateway node, asgn)
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run('main:app', host="0.0.0.0", port=8000, reload=True, log_level="info", access_log=False)
+    uvicorn.run('main:app', host=DEFAULT_HOST, port=DEFAULT_PORT, reload=True, log_level="info", access_log=False)
