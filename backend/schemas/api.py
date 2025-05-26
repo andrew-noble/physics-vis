@@ -17,3 +17,6 @@ class AgentRequest(BaseModel):
 class AgentResponse(BaseModel):
     message: str
     diagramData: Optional[Fbd] = None
+
+class StreamSession(BaseModel):
+    sessionId: str
