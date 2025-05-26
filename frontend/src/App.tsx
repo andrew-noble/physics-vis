@@ -85,10 +85,6 @@ export default function App() {
         });
       });
 
-      eventSource.onmessage = (event) => {
-        console.log("message", event.data);
-      };
-
       // handle tool calls
       eventSource.addEventListener("tool_call", (event) => {
         console.log("tool call", event.data);
@@ -97,15 +93,14 @@ export default function App() {
       // handle tool results
       // TODO: this will likely need to change if/when we have tool results that arent diagramData
       eventSource.addEventListener("tool_result", (event) => {
-        setDiagramData(event.data.result);
+        const result = JSON.parse(event.data);
+        setDiagramData(result);
       });
 
-      // Critical otherwise eventSource will try and reconnect
       eventSource.addEventListener("complete", () => {
         eventSource.close();
       });
 
-      // Also good practice to handle errors
       eventSource.onerror = (error) => {
         console.error("EventSource error:", error);
         eventSource.close();

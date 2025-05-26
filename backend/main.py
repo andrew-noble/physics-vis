@@ -189,7 +189,7 @@ async def receive_event_stream(request: Request, session_id: str):
 
                         # emit tool result to client.
                         # TODO: This will need to be refactored if/when we have tool results that aren't diagram data
-                        yield sse_event("tool_result", {"name": tool_name, "result": tool_result})
+                        yield sse_event("tool_result", tool_result)
 
                     except Exception as e:
                         log.info(f"Tool error: {str(e)}")
