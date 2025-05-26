@@ -135,7 +135,7 @@ async def receive_event_stream(request: Request, session_id: str):
                 if not pending_calls:
                     log.info("Agent is done!")
                     yield sse_event("complete", {})
-                    break
+                    return
 
                 # act - run the tool calls
                 for tool_call in pending_calls.values():
