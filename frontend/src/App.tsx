@@ -117,7 +117,9 @@ export default function App() {
 
   return (
     <div className="fixed inset-0 grid grid-cols-2">
-      <DiagramViewer diagramData={diagramData} />
+      <div className="flex justify-center items-center">
+        <DiagramViewer diagramData={diagramData} />
+      </div>
       <div className="overflow-y-auto">
         <ChatInterface
           messages={messages}
