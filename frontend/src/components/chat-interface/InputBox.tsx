@@ -19,7 +19,7 @@ export function InputBox({ onSubmit, disabled = false }: InputBoxProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t bg-background p-4">
+    <form onSubmit={handleSubmit} className="bg-background p-4">
       <textarea
         className="w-full resize-none rounded-xl border p-3 focus:outline-none focus:ring disabled:opacity-50"
         rows={1}

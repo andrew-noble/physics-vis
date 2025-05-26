@@ -50,7 +50,7 @@ export default function DiagramViewer({
   }, [diagramData]);
 
   return (
-    <div className="circuit-visualization" style={{ width, height }}>
+    <div style={{ width, height }}>
       <svg
         ref={svgRef}
         xmlns="http://www.w3.org/2000/svg"
