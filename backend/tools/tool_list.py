@@ -1,58 +1,34 @@
-from tools.create_fbd import create_fbd
-from tools.update_fbd import update_fbd
-
+from tools.draw_fbd import draw_fbd
 
 tool_list = [
     {
         "type": "function",
         "function": {
-            "name": "create_fbd",
-            "description": "Generate a JSON free-body diagram (FBD) from natural-language input.",
+            "name": "draw_fbd",
+            "description": "Change the FBD JSON according to user instructions. If the FBD JSON is empty, create a new FBD from scratch.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "situation": {
-                        "type": "string",
-                        "description": "Natural-language description of the physical setup."
-                    }
-                },
-                "required": ["situation"],
-                "additionalProperties": False
-            },
-            "strict": True
-        },
-        "handler": create_fbd
-    },
-
-    {
-        "type": "function",
-        "function": {
-            "name": "update_fbd",
-            "description": "Modify an existing FBD JSON according to user instructions.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "fbd_json": {
+                    "existing_fbd_json": {
                         "type": "string",                      # ← accept raw JSON text
                         "description": (
-                            "The current FBD (as a JSON string). "
-                            "Must be valid JSON."
+                            "The current FBD (as a JSON string). May be empty if a new FBD is being created."
                         )
                     },
                     "instructions": {
                         "type": "string",
                         "description": (
-                            "Natural-language instructions describing the changes "
+                            "Natural-language instructions for changing the FBD JSON or populating it from scratch"
                             "(e.g. “add a 5 N force to the right on the block”)."
                         )
                     }
                 },
-                "required": ["fbd_json", "instructions"],
+                "required": ["existing_fbd_json", "instructions"],
                 "additionalProperties": False
             },
             "strict": True
         },
-        "handler": update_fbd
+        "handler": draw_fbd
     }
 ]
 
