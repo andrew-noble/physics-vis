@@ -1,5 +1,3 @@
-from enum import Enum
-
 # API Constants
 API_V1_PREFIX = "/api/v1"
 PROJECT_NAME = "Physics Visualization API"

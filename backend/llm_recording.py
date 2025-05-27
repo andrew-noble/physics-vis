@@ -2,6 +2,8 @@ import os
 import json
 import datetime
 
+# TODO: make a decorator for tool calls instead!
+# it should have rich metadata, as some things are only relevant to some tools, like LLM model
 def record_fbd_draw(model, duration, prompt, fbd_json):
     log_file = "./logs/fbd_draw_logs.jsonl"
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
@@ -19,7 +21,7 @@ def record_fbd_draw(model, duration, prompt, fbd_json):
         json.dump(log_entry, f)
         f.write("\n")  # Add newline to separate entries
 
-
+# also make into a decorator
 def record_agent_thinking(model, duration):
     log_file = "./logs/agent_thinking_logs.jsonl"
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
