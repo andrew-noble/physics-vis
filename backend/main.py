@@ -27,7 +27,7 @@ load_dotenv()
 limiter = Limiter(key_func=get_remote_address)
 
 os.makedirs("logs", exist_ok=True)
-with open("logging_config.json") as f:
+with open("logs/logging_config.json") as f:
     log_config = json.load(f)
 logging.config.dictConfig(log_config)
 
