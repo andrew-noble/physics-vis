@@ -3,7 +3,7 @@ import DiagramViewer from "./components/DiagramViewer";
 import { useState } from "react";
 import { sampleDiagram } from "./data/sampleDiagram";
 import ChatInterface from "./components/chat-interface/ChatInterface";
-import { MessageType } from "./types/chatUiTypes";
+import { MessageType } from "@/types/tutor/chat";
 
 const API_URL = "http://localhost:8000";
 
@@ -118,7 +118,8 @@ export default function App() {
   return (
     <div className="fixed inset-0 grid grid-cols-2">
       <div className="flex justify-center items-center">
-        <DiagramViewer diagramData={diagramData} />
+        {/* likely want to make the width height responve later, this is where you do it */}
+        <DiagramViewer width={800} height={800} diagramData={diagramData} />
       </div>
       <div className="overflow-y-auto">
         <ChatInterface

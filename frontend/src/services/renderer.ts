@@ -1,6 +1,12 @@
 import * as d3 from "d3";
-import { Diagram, Force, Moment, Body, BodyShape } from "@/types/dataTypes";
-import { defaultTheme } from "@/types";
+import {
+  Diagram,
+  Force,
+  Moment,
+  Body,
+  BodyShape,
+} from "@/types/diagrams/fbdSchema";
+import { DiagramTheme } from "@/types/diagrams/fbdTheme";
 
 interface ShapePositions {
   top: { x: number; y: number };
@@ -13,36 +19,40 @@ interface ShapePositions {
 export class Renderer {
   private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private dimensions: { width: number; height: number };
-  private padding: { top: number; right: number; bottom: number; left: number };
+  private unitLength: number;
   private xScale: d3.ScaleLinear<number, number>;
   private yScale: d3.ScaleLinear<number, number>;
-  private unitLength: number;
   private origin: { x: number; y: number };
+  private theme: DiagramTheme;
 
-  constructor(svgElement: SVGSVGElement) {
+  constructor(
+    svgElement: SVGSVGElement,
+    theme: DiagramTheme,
+    width: number,
+    height: number
+  ) {
     this.svg = d3.select(svgElement);
-    this.dimensions = { width: 800, height: 600 };
-    this.padding = { top: 40, right: 40, bottom: 40, left: 40 };
+    this.dimensions = { width, height };
+    this.unitLength = 1;
     this.xScale = d3.scaleLinear();
     this.yScale = d3.scaleLinear();
-    this.unitLength = 1;
     this.origin = { x: 0, y: 0 };
     this.initializeScales();
+    this.theme = theme;
   }
 
   private initializeScales(): void {
-    const domain = [-3, 3];
-    const right = this.dimensions.width - this.padding.right;
-    const bottom = this.dimensions.height - this.padding.bottom;
+    const domain = [-3, 3]; //domain of diagram, 6 units wide
 
+    // this creates renderer-owned d3 scaleLinear objects used to place shit
     this.xScale = d3
       .scaleLinear()
       .domain(domain)
-      .range([this.padding.left, right]);
+      .range([0, this.dimensions.width]);
     this.yScale = d3
       .scaleLinear()
       .domain(domain)
-      .range([bottom, this.padding.top]); //inverted bc y+ is down
+      .range([this.dimensions.height, 0]); //inverted bc y+ is down in web
 
     this.unitLength = this.xScale(1) - this.xScale(0);
     this.origin = { x: this.xScale(0), y: this.yScale(0) };
@@ -51,6 +61,48 @@ export class Renderer {
   public updateDimensions(width: number, height: number): void {
     this.dimensions = { width, height };
     this.initializeScales();
+  }
+
+  public render(diagram: Diagram): void {
+    // Clear previous render
+    this.svg.selectAll("*").remove();
+
+    // Setup SVG definitions/reusables (including markers)
+    this.setupSvg();
+
+    // Create root group
+    const rootGroup = this.svg.append("g");
+
+    // Render body and get reference to bodyGroup
+    const bodyGroup = this.renderBody(rootGroup, diagram.body);
+
+    // Render forces as children of bodyGroup
+    diagram.forces.forEach((force: Force) =>
+      this.renderForce(bodyGroup, force, diagram.body)
+    );
+
+    // Render moments as children of bodyGroup
+    diagram.moments.forEach((moment: Moment) =>
+      this.renderMoment(bodyGroup, moment, diagram.body)
+    );
+  }
+
+  private setupSvg(): void {
+    //container for reusable definitions
+    const defs = this.svg.append("defs");
+
+    //put in an arrowhead marker
+    defs
+      .append("marker")
+      .attr("id", "arrow")
+      .attr("viewBox", "0 0 10 10")
+      .attr("refX", 5)
+      .attr("refY", 5)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M 0 0 L 10 5 L 0 10 z");
   }
 
   private renderAxes(): void {
@@ -67,30 +119,6 @@ export class Renderer {
       .attr("class", "y-axis")
       .attr("transform", `translate(${this.xScale(0)},0)`)
       .call(d3.axisLeft(this.yScale));
-  }
-
-  public render(diagram: Diagram): void {
-    // Clear previous render
-    this.svg.selectAll("*").remove();
-
-    // // Render axes
-    // this.renderAxes();
-
-    // Create main group
-    const mainGroup = this.svg.append("g");
-
-    // Render body and get reference to bodyGroup
-    const bodyGroup = this.renderBody(mainGroup, diagram.body);
-
-    // Render forces as children of bodyGroup
-    diagram.forces.forEach((force: Force) =>
-      this.renderForce(bodyGroup, force, diagram.body)
-    );
-
-    // Render moments as children of bodyGroup
-    diagram.moments.forEach((moment: Moment) =>
-      this.renderMoment(bodyGroup, moment, diagram.body)
-    );
   }
 
   private renderBody(
@@ -117,8 +145,8 @@ export class Renderer {
           .attr("height", height)
           .attr("x", -width / 2)
           .attr("y", -height / 2)
-          .attr("fill", defaultTheme.backgroundColor)
-          .attr("stroke", defaultTheme.gridColor)
+          .attr("fill", this.theme.bodyTheme.fillColor)
+          .attr("stroke", this.theme.bodyTheme.strokeColor)
           .attr("stroke-width", 2);
         break;
       case "circle":
@@ -128,8 +156,8 @@ export class Renderer {
           .attr("r", radius)
           .attr("cx", 0)
           .attr("cy", 0)
-          .attr("fill", defaultTheme.backgroundColor)
-          .attr("stroke", defaultTheme.gridColor)
+          .attr("fill", this.theme.bodyTheme.fillColor)
+          .attr("stroke", this.theme.bodyTheme.strokeColor)
           .attr("stroke-width", 2);
         break;
       case "square":
@@ -141,8 +169,8 @@ export class Renderer {
           .attr("height", side)
           .attr("x", -side / 2)
           .attr("y", -side / 2)
-          .attr("fill", defaultTheme.backgroundColor)
-          .attr("stroke", defaultTheme.gridColor)
+          .attr("fill", this.theme.bodyTheme.fillColor)
+          .attr("stroke", this.theme.bodyTheme.strokeColor)
           .attr("stroke-width", 2);
     }
     return bodyGroup;
@@ -168,8 +196,9 @@ export class Renderer {
         `translate(${tailPosition.x}, ${tailPosition.y})`
       )
       .attr("fill", "none")
-      .attr("stroke", defaultTheme.defaultArrowConfig.color)
-      .attr("stroke-width", defaultTheme.defaultArrowConfig.strokeWidth);
+      .attr("stroke", this.theme.arrowTheme.color)
+      .attr("stroke-width", this.theme.arrowTheme.strokeWidth)
+      .attr("marker-end", "url(#arrow)");
 
     // // Add label
     // this.addLabel(
@@ -198,16 +227,11 @@ export class Renderer {
       .append("path")
       .attr("d", this.createMomentPath(moment, position))
       .attr("fill", "none")
-      .attr("stroke", defaultTheme.defaultMomentConfig.color)
-      .attr("stroke-width", defaultTheme.defaultMomentConfig.strokeWidth);
+      .attr("stroke", this.theme.momentTheme.color)
+      .attr("stroke-width", this.theme.momentTheme.strokeWidth);
 
     // Add label
-    this.addLabel(
-      momentGroup,
-      moment.label,
-      position,
-      defaultTheme.defaultLabelConfig
-    );
+    this.addLabel(momentGroup, moment.label, position);
   }
 
   private getShapePositions(shape: BodyShape): ShapePositions {
@@ -261,7 +285,7 @@ export class Renderer {
   // I don't like this approach. We already have global force angles
   // why is body even involved here?
   private createArrowPath(force: Force, body: Body): string {
-    const length = this.unitLength; // Arrow length
+    const length = this.unitLength + 50; // Arrow length
     // Use force.angle relative to the body (local coordinates)
     const localAngle = force.angle - body.angle; //WTF???
     const angle = (-localAngle * Math.PI) / 180; // Negate angle for SVG y-axis
@@ -269,20 +293,14 @@ export class Renderer {
     const endX = length * Math.cos(angle);
     const endY = length * Math.sin(angle);
 
-    const arrowHead1X = endX - 0.1 * length * Math.cos(angle + 70);
-    const arrowHead1Y = endY - 0.1 * length * Math.sin(angle + 70);
-
-    const arrowHead2X = endX - 0.1 * length * Math.cos(angle - 70);
-    const arrowHead2Y = endY - 0.1 * length * Math.sin(angle - 70);
-
-    return `M 0 0 L ${endX} ${endY} L ${arrowHead1X} ${arrowHead1Y} M ${endX} ${endY} L ${arrowHead2X} ${arrowHead2Y}`;
+    return `M 0 0 L ${endX} ${endY} M ${endX} ${endY}`;
   }
 
   private createMomentPath(
     moment: Moment,
     position: { x: number; y: number }
   ): string {
-    const radius = defaultTheme.defaultMomentConfig.arcRadius;
+    const radius = this.theme.momentTheme.arcRadius;
     const startAngle = 0;
     const endAngle = moment.direction === "cw" ? -Math.PI : Math.PI;
 
@@ -307,16 +325,14 @@ export class Renderer {
   private addLabel(
     group: d3.Selection<SVGGElement, unknown, null, undefined>,
     text: string,
-    position: { x: number; y: number },
-    config: typeof defaultTheme.defaultLabelConfig
+    position: { x: number; y: number }
   ): void {
     group
       .append("text")
-      .attr("x", position.x + config.offset.x)
-      .attr("y", position.y + config.offset.y)
-      .attr("font-family", config.fontFamily)
-      .attr("font-size", config.fontSize)
-      .attr("fill", config.color)
+      .attr("x", position.x + this.theme.labelTheme.offset.x)
+      .attr("y", position.y + this.theme.labelTheme.offset.y)
+      .attr("text-anchor", "middle")
+      .attr("font-family", this.theme.labelTheme.fontFamily)
       .text(text);
   }
 
