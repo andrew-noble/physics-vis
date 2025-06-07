@@ -5,7 +5,7 @@ from constants import MAX_CONTEXT_MESSAGES
 
 def trim_context(messages: List[dict], max_messages: int = MAX_CONTEXT_MESSAGES) -> List[dict]:
     """Keep only the most recent messages while preserving system message."""
-    system_message = {"role": "system", "content": agent_prompt}
+    system_message = {"role": "developer", "content": agent_prompt}
     
     if len(messages) < max_messages:
         return [system_message, *messages]

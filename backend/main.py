@@ -30,7 +30,6 @@ os.makedirs("logs", exist_ok=True)
 with open("logs/logging_config.json") as f:
     log_config = json.load(f)
 logging.config.dictConfig(log_config)
-
 log = logging.getLogger(__name__)
 
 app = FastAPI(title="FBD Generation API")
@@ -153,6 +152,10 @@ async def receive_event_stream(request: Request, session_id: str):
                     yield sse_event("complete", {})
                     agent_duration = time.perf_counter() - agent_start_time
                     log.info(f"Agent turn took {agent_duration} seconds")
+                    # Clean up the session
+                    if session_id in stream_sessions:
+                        del stream_sessions[session_id]
+                        log.info(f"Session {session_id} cleaned up. Active sessions: {len(stream_sessions)}")
                     return
 
                 # act - run the tool calls
@@ -202,6 +205,10 @@ async def receive_event_stream(request: Request, session_id: str):
 
         except Exception as e:
             log.error("Agent error occurred", exc_info=True)
+            # Clean up the session on error
+            if session_id in stream_sessions:
+                del stream_sessions[session_id]
+                log.info(f"Session {session_id} cleaned up due to error. Active sessions: {len(stream_sessions)}")
             raise HTTPException(status_code=500, detail=f"Agent error: {str(e)}")
         
     # this return happens before event_stream() ever runs, btw
