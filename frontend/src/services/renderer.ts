@@ -71,28 +71,69 @@ export class Renderer {
     this.setupSvg();
 
     // Create root group
-    const rootGroup = this.svg.append("g");
+    const rootGroup = this.svg
+      .append("g")
+      .attr("class", "svg-root-group")
+      .attr("transform", `translate(${this.origin.x}, ${this.origin.y})`);
 
-    // Render body and get reference to bodyGroup
-    const bodyGroup = this.renderBody(rootGroup, diagram.body);
+    // render axes
+    // rootGroup
+    //   .append("g")
+    //   .attr("class", "axes-group")
+    //   .call(() => this.renderAxes());
 
-    // Render forces as children of bodyGroup
-    diagram.forces.forEach((force: Force) =>
-      this.renderForce(bodyGroup, force, diagram.body)
-    );
+    // render body
+    const bodyGroup = rootGroup
+      .append("g")
+      .attr("class", "body-group")
+      .call((selection) => this.renderBody(selection, diagram.body));
 
-    // Render moments as children of bodyGroup
-    diagram.moments.forEach((moment: Moment) =>
-      this.renderMoment(bodyGroup, moment, diagram.body)
-    );
+    // render forces
+    rootGroup
+      .append("g")
+      .attr("class", "force-group")
+      .selectAll("path.force")
+      .data(diagram.forces)
+      .join("path")
+      .attr("class", "force")
+      // draw the arrow path at its local angle
+      .attr("marker-end", "url(#arrow)")
+      .attr("d", (d) => this.createForcePath(d))
+      // place the arrow at the tail position (which depends on body)
+      .attr(
+        "transform",
+        (d) =>
+          `translate(${this.getPositionOnBody(d, diagram.body)}) ` +
+          `rotate(${d.referenceFrame === "body" ? diagram.body.angle : 0})`
+      )
+      .attr("stroke", this.theme.arrowTheme.color)
+      .attr("stroke-width", this.theme.arrowTheme.strokeWidth)
+      .call((selection) => this.addLabel(selection, (d: Force) => d.label));
+
+    // render moments
+    rootGroup
+      .append("g")
+      .attr("class", "moment-group")
+      .selectAll("path.moment")
+      .data(diagram.moments)
+      .join("path")
+      .attr("class", "moment")
+      .attr("d", this.createMomentPath)
+      .attr(
+        "transform",
+        (d) =>
+          `translate(${this.getPositionOnBody(d, diagram.body)}) rotate(${
+            diagram.body.angle
+          }, ${this.origin.x}, ${this.origin.y})`
+      )
+      .attr("fill", "none")
+      .attr("stroke", this.theme.momentTheme.color)
+      .attr("stroke-width", this.theme.momentTheme.strokeWidth);
   }
 
   private setupSvg(): void {
-    //container for reusable definitions
-    const defs = this.svg.append("defs");
-
-    //put in an arrowhead marker
-    defs
+    this.svg
+      .append("defs")
       .append("marker")
       .attr("id", "arrow")
       .attr("viewBox", "0 0 10 10")
@@ -100,7 +141,7 @@ export class Renderer {
       .attr("refY", 5)
       .attr("markerWidth", 6)
       .attr("markerHeight", 6)
-      .attr("orient", "auto")
+      .attr("orient", "auto") //makes it so both ends point out
       .append("path")
       .attr("d", "M 0 0 L 10 5 L 0 10 z");
   }
@@ -122,24 +163,21 @@ export class Renderer {
   }
 
   private renderBody(
-    group: d3.Selection<SVGGElement, unknown, null, undefined>,
-    body: Body
+    parentGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
+    bodyData: Body
   ): d3.Selection<SVGGElement, unknown, null, undefined> {
-    const bodyGroup = group
+    const group = parentGroup
       .append("g")
       .attr("class", "body")
-      .attr(
-        "transform",
-        `translate(${this.xScale(0)}, ${this.yScale(0)}) rotate(${-body.angle})`
-      );
+      .attr("transform", `rotate(${-bodyData.angle})`);
 
-    switch (body.shape) {
+    switch (bodyData.shape) {
       case "rectangle":
         // * 2 so that the edge of the square is unit length from centroid
 
         const width = this.unitLength * 2 * 1.5; //have to convert to pixels vis scale
         const height = this.unitLength * 2;
-        bodyGroup
+        group
           .append("rect")
           .attr("width", width)
           .attr("height", height)
@@ -151,7 +189,7 @@ export class Renderer {
         break;
       case "circle":
         const radius = this.unitLength;
-        bodyGroup
+        group
           .append("circle")
           .attr("r", radius)
           .attr("cx", 0)
@@ -163,7 +201,7 @@ export class Renderer {
       case "square":
         // * 2 so that the edge of the square is unit length from centroid
         const side = this.unitLength * 2;
-        bodyGroup
+        group
           .append("rect")
           .attr("width", side)
           .attr("height", side)
@@ -173,69 +211,10 @@ export class Renderer {
           .attr("stroke", this.theme.bodyTheme.strokeColor)
           .attr("stroke-width", 2);
     }
-    return bodyGroup;
-  }
-
-  private renderForce(
-    group: d3.Selection<SVGGElement, unknown, null, undefined>,
-    force: Force,
-    body: Body
-  ): void {
-    const forceGroup = group.append("g").attr("class", "force");
-
-    // Calculate force position based on location
-    const tailPosition = this.getForceTailPosition(force, body);
-
-    // Create arrow with marker
-    forceGroup
-      .append("path")
-      .attr("d", this.createArrowPath(force, body)) // Draw the path
-      .attr(
-        //place the path
-        "transform",
-        `translate(${tailPosition.x}, ${tailPosition.y})`
-      )
-      .attr("fill", "none")
-      .attr("stroke", this.theme.arrowTheme.color)
-      .attr("stroke-width", this.theme.arrowTheme.strokeWidth)
-      .attr("marker-end", "url(#arrow)");
-
-    // // Add label
-    // this.addLabel(
-    //   forceGroup,
-    //   force.label,
-    //   {
-    //     x: tailPosition.x + 40 * Math.cos(force.angle),
-    //     y: tailPosition.y + 40 * Math.sin(force.angle),
-    //   },
-    //   defaultTheme.defaultLabelConfig
-    // );
-  }
-
-  private renderMoment(
-    group: d3.Selection<SVGGElement, unknown, null, undefined>,
-    moment: Moment,
-    body: Body
-  ): void {
-    const momentGroup = group.append("g").attr("class", "moment");
-
-    // Calculate moment position based on location
-    const position = this.getMomentPosition(moment, body);
-
-    // Create moment arc
-    momentGroup
-      .append("path")
-      .attr("d", this.createMomentPath(moment, position))
-      .attr("fill", "none")
-      .attr("stroke", this.theme.momentTheme.color)
-      .attr("stroke-width", this.theme.momentTheme.strokeWidth);
-
-    // Add label
-    this.addLabel(momentGroup, moment.label, position);
+    return group;
   }
 
   private getShapePositions(shape: BodyShape): ShapePositions {
-    // All positions are now local to the body (centered at 0,0)
     const basePositions: ShapePositions = {
       top: { x: 0, y: -this.unitLength },
       bottom: { x: 0, y: this.unitLength },
@@ -263,93 +242,56 @@ export class Renderer {
     }
   }
 
-  private getForceTailPosition(
-    force: Force,
-    body: Body
-  ): { x: number; y: number } {
-    // No need to rotate or translate, as all positions are now local to the body
+  // this gets a force's proper tail position per body rotation
+  private getPositionOnBody(target: Force | Moment, body: Body): string {
     const positions = this.getShapePositions(body.shape);
-    return positions[force.location];
+    const pos = positions[target.location];
+
+    // Convert body angle to radians and negate it for correct rotation direction
+    const angleRad = (-body.angle * Math.PI) / 180;
+
+    // Rotate the position around the origin
+    const rotatedX = pos.x * Math.cos(angleRad) - pos.y * Math.sin(angleRad);
+    const rotatedY = pos.x * Math.sin(angleRad) + pos.y * Math.cos(angleRad);
+
+    return `${rotatedX},${rotatedY}`;
   }
 
-  private getMomentPosition(
-    moment: Moment,
-    body: Body
-  ): { x: number; y: number } {
-    // No need to rotate or translate, as all positions are now local to the body
-    const positions = this.getShapePositions(body.shape);
-    return positions[moment.location];
-  }
-
-  //SOMETHING IS FUCKED HERE
-  // I don't like this approach. We already have global force angles
-  // why is body even involved here?
-  private createArrowPath(force: Force, body: Body): string {
+  private createForcePath(force: Force): string {
     const length = this.unitLength + 50; // Arrow length
-    // Use force.angle relative to the body (local coordinates)
-    const localAngle = force.angle - body.angle; //WTF???
-    const angle = (-localAngle * Math.PI) / 180; // Negate angle for SVG y-axis
+    const angle = (-force.angle * Math.PI) / 180; // Negate angle for SVG y-axis
 
     const endX = length * Math.cos(angle);
     const endY = length * Math.sin(angle);
 
-    return `M 0 0 L ${endX} ${endY} M ${endX} ${endY}`;
+    return `M 0 0 L ${endX} ${endY}`;
   }
 
-  private createMomentPath(
-    moment: Moment,
-    position: { x: number; y: number }
-  ): string {
-    const radius = this.theme.momentTheme.arcRadius;
-    const startAngle = 0;
-    const endAngle = moment.direction === "cw" ? -Math.PI : Math.PI;
+  private createMomentPath(moment: Moment): string {
+    const r = this.theme.momentTheme.arcRadius; // radius of the curve
+    const sweep = moment.direction === "cw" ? 1 : 0; // 1 = CW, 0 = CCW
 
-    const arc = d3
-      .arc()
-      .innerRadius(radius)
-      .outerRadius(radius)
-      .startAngle(startAngle)
-      .endAngle(endAngle);
-
-    return (
-      arc({
-        innerRadius: radius,
-        outerRadius: radius,
-        startAngle,
-        endAngle,
-        padAngle: 0,
-      }) || ""
-    );
+    // Half-circle from (0, -r) to (0, r)
+    // large-arc-flag = 0  (exactly 180°)
+    // sweep-flag       = sweep (CW vs CCW)
+    return `M 0 ${-r} A ${r} ${r} 0 0 ${sweep} 0 ${r}`;
   }
 
   private addLabel(
-    group: d3.Selection<SVGGElement, unknown, null, undefined>,
-    text: string,
-    position: { x: number; y: number }
+    selection: d3.Selection<
+      d3.BaseType | SVGPathElement,
+      Force,
+      SVGGElement,
+      unknown
+    >,
+    textFn: (d: Force) => string
   ): void {
-    group
+    selection
       .append("text")
-      .attr("x", position.x + this.theme.labelTheme.offset.x)
-      .attr("y", position.y + this.theme.labelTheme.offset.y)
+      .attr("x", this.theme.labelTheme.offset.x)
+      .attr("y", this.theme.labelTheme.offset.y)
       .attr("text-anchor", "middle")
       .attr("font-family", this.theme.labelTheme.fontFamily)
-      .text(text);
-  }
-
-  // Helper to rotate a point around a center by angleDeg degrees
-  private rotatePoint(
-    point: { x: number; y: number },
-    center: { x: number; y: number },
-    angleDeg: number
-  ): { x: number; y: number } {
-    const angleRad = (angleDeg * Math.PI) / 180;
-    const cos = Math.cos(angleRad);
-    const sin = Math.sin(angleRad);
-    const dx = point.x - center.x;
-    const dy = point.y - center.y;
-    return {
-      x: center.x + dx * cos - dy * sin,
-      y: center.y + dx * sin + dy * cos,
-    };
+      .text(textFn);
   }
 }
