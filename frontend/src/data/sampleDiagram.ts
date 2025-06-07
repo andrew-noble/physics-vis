@@ -1,4 +1,4 @@
-import { Diagram } from "@/types";
+import { Diagram } from "@/types/diagrams/fbdSchema";
 
 export const sampleDiagram: Diagram = {
   body: {

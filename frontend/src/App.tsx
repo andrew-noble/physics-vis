@@ -4,12 +4,13 @@ import { useState } from "react";
 import { sampleDiagram } from "./data/sampleDiagram";
 import ChatInterface from "./components/chat-interface/ChatInterface";
 import { MessageType } from "@/types/tutor/chat";
+import { defaultMessage } from "./data/defaultMessage";
 
 const API_URL = "http://localhost:8000";
 
 export default function App() {
   const [diagramData, setDiagramData] = useState<any>(sampleDiagram);
-  const [messages, setMessages] = useState<MessageType[]>([]);
+  const [messages, setMessages] = useState<MessageType[]>([defaultMessage]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
