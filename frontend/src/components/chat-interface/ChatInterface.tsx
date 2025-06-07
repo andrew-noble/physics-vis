@@ -1,6 +1,6 @@
 import { MessageList } from "./MessageList";
 import { InputBox } from "./InputBox";
-import { MessageType } from "@/types/chatUiTypes";
+import { MessageType } from "@/types/tutor/chat";
 
 export interface ChatInterfaceProps {
   messages: MessageType[];
