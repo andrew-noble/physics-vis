@@ -19,6 +19,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173/physics-vis/")
 ALLOWED_ORIGINS = [
     "http://localhost:5173/physics-vis/",  # Vite default dev server
     "http://localhost:3000/physics-vis/",  # Alternative dev server
+    "https://www.andrewnoble.me/physics-vis/",
     FRONTEND_URL,  # Production or custom frontend URL
 ]
 
