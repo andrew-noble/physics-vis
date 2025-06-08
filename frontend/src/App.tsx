@@ -5,6 +5,9 @@ import { sampleDiagram } from "./data/sampleDiagram";
 import ChatInterface from "./components/chat-interface/ChatInterface";
 import { MessageType } from "@/types/tutor/chat";
 import { defaultMessage } from "./data/defaultMessage";
+import SceneButton from "./components/SceneButton";
+import { sceneDescriptions } from "./data/sceneDescriptions";
+import Spinner from "./components/Spinner";
 
 const API_URL = "http://localhost:8000";
 
@@ -12,10 +15,17 @@ export default function App() {
   const [diagramData, setDiagramData] = useState<any>(sampleDiagram);
   const [messages, setMessages] = useState<MessageType[]>([defaultMessage]);
   const [pending, setPending] = useState(false);
+  const [diagramPending, setDiagramPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentScene, setCurrentScene] = useState<string>("block");
+  const [toolCalls, setToolCalls] = useState<string[]>([]);
 
-  const handleSendMessage = async (newMessageText: string) => {
+  const handleSendMessage = async (
+    newMessageText: string,
+    currentMessages: MessageType[] = messages,
+    currentDiagramData: any = diagramData,
+    currentSceneName: string = currentScene
+  ) => {
     // store user's message
     setMessages((existingMessages) => [
       ...existingMessages,
@@ -26,11 +36,15 @@ export default function App() {
     try {
       const payload = {
         messages: [
-          ...messages,
+          ...currentMessages,
           { id: crypto.randomUUID(), role: "user", content: newMessageText },
         ],
-        diagramData: diagramData,
+        diagramData: currentDiagramData,
+        sceneDescription:
+          sceneDescriptions[currentSceneName as keyof typeof sceneDescriptions],
       };
+
+      console.log("payload", payload);
 
       // request event streaming session
       const response = await fetch(`${API_URL}/stream-sessions`, {
@@ -92,6 +106,11 @@ export default function App() {
       // handle tool calls
       eventSource.addEventListener("tool_call", (event) => {
         console.log("tool call", event.data);
+        setToolCalls((existingToolCalls) => [
+          ...existingToolCalls,
+          JSON.parse(event.data),
+        ]);
+        setDiagramPending(true);
       });
 
       // handle tool results
@@ -99,11 +118,13 @@ export default function App() {
       eventSource.addEventListener("tool_result", (event) => {
         const result = JSON.parse(event.data);
         setDiagramData(result);
+        setDiagramPending(false);
       });
 
       eventSource.addEventListener("complete", () => {
         eventSource.close();
         setPending(false);
+        setToolCalls([]);
       });
 
       eventSource.onerror = (error) => {
@@ -118,55 +139,58 @@ export default function App() {
     }
   };
 
+  const handleSceneChange = async (sceneName: string) => {
+    setCurrentScene(sceneName as "block" | "car" | "ladder" | "pendulum");
+    setDiagramData(null);
+    setMessages([defaultMessage]);
+
+    handleSendMessage(
+      `Let's look at a different scene. Clear the current diagram and make a new one for the ${sceneName}.`,
+      [defaultMessage],
+      null,
+      sceneName
+    );
+  };
+
+  const sceneList = ["block", "car", "pendulum"];
+
   return (
     <div className="fixed inset-0 grid grid-cols-2">
       <div className="flex flex-col justify-center items-center gap-4">
         <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold mb-3 text-center">
+          <h2 className="text-lg font-semibold text-center">
             Study a different scene
           </h2>
-          <div className="flex gap-3">
-            <button
-              className="w-28 h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity"
-              style={{ backgroundImage: 'url("/block.jpg")' }}
-              onClick={() => setCurrentScene("block")}
-            />
-            <button
-              className="w-28 h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity"
-              style={{ backgroundImage: 'url("/car.jpg")' }}
-              onClick={() => setCurrentScene("car")}
-            />
-            <button
-              className="w-28 h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity"
-              style={{ backgroundImage: 'url("/ladder.jpg")' }}
-              onClick={() => setCurrentScene("ladder")}
-            />
-            <button
-              className="w-28 h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity"
-              style={{ backgroundImage: 'url("/pendulum.jpg")' }}
-              onClick={() => setCurrentScene("pendulum")}
-            />
+          <p className="text-sm text-gray-500 mb-5 text-center">
+            (Clears chat and diagram)
+          </p>
+          <div className="flex gap-3 justify-center items-center">
+            {sceneList.map((sceneName) => (
+              <SceneButton
+                sceneName={sceneName}
+                onClick={() => handleSceneChange(sceneName)}
+                disabled={currentScene === sceneName}
+                isHighlighted={currentScene === sceneName}
+              />
+            ))}
           </div>
         </div>
 
-        <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold mb-3 text-center">
-            Current Scene
-          </h2>
-          <div
-            className="w-32 h-32 bg-cover bg-center rounded-lg"
-            style={{ backgroundImage: `url("/${currentScene}.jpg")` }}
-          />
-        </div>
-
         <div className="w-[700px] h-[700px]">
-          <DiagramViewer diagramData={diagramData} />
+          {diagramPending ? (
+            <div className="flex justify-center items-center h-full">
+              <Spinner />
+            </div>
+          ) : (
+            <DiagramViewer diagramData={diagramData} />
+          )}
         </div>
       </div>
       <div className="overflow-y-auto">
         <ChatInterface
           messages={messages}
           pending={pending}
+          toolCalls={toolCalls}
           onSendMessage={handleSendMessage}
         />
       </div>

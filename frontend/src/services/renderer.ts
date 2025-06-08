@@ -102,13 +102,35 @@ export class Renderer {
       // place the arrow at the tail position (which depends on body)
       .attr(
         "transform",
-        (d) =>
-          `translate(${this.getPositionOnBody(d, diagram.body)}) ` +
-          `rotate(${d.referenceFrame === "body" ? diagram.body.angle : 0})`
+        (d) => `translate(${this.getPositionOnBody(d, diagram.body)}) `
+        //fuck idk what this shit is
+        // `rotate(${d.referenceFrame === "body" ? diagram.body.angle : 0})`
       )
       .attr("stroke", this.theme.arrowTheme.color)
-      .attr("stroke-width", this.theme.arrowTheme.strokeWidth)
-      .call((selection) => this.addLabel(selection, (d: Force) => d.label));
+      .attr("stroke-width", this.theme.arrowTheme.strokeWidth);
+
+    // Create separate text elements for labels
+    rootGroup
+      .append("g")
+      .attr("class", "force-labels")
+      .selectAll("text")
+      .data(diagram.forces)
+      .join("text")
+      .attr("x", (d) => {
+        const distance = this.unitLength + 100;
+        const angle = (-d.angle * Math.PI) / 180;
+        const x = distance * Math.cos(angle);
+        return x;
+      })
+      .attr("y", (d) => {
+        const distance = this.unitLength + 100;
+        const angle = (-d.angle * Math.PI) / 180;
+        const y = distance * Math.sin(angle);
+        return y;
+      })
+      .attr("text-anchor", "middle")
+      .attr("font-family", this.theme.labelTheme.fontFamily)
+      .text((d) => d.label);
 
     // render moments
     rootGroup
@@ -275,23 +297,5 @@ export class Renderer {
     // large-arc-flag = 0  (exactly 180°)
     // sweep-flag       = sweep (CW vs CCW)
     return `M 0 ${-r} A ${r} ${r} 0 0 ${sweep} 0 ${r}`;
-  }
-
-  private addLabel(
-    selection: d3.Selection<
-      d3.BaseType | SVGPathElement,
-      Force,
-      SVGGElement,
-      unknown
-    >,
-    textFn: (d: Force) => string
-  ): void {
-    selection
-      .append("text")
-      .attr("x", this.theme.labelTheme.offset.x)
-      .attr("y", this.theme.labelTheme.offset.y)
-      .attr("text-anchor", "middle")
-      .attr("font-family", this.theme.labelTheme.fontFamily)
-      .text(textFn);
   }
 }

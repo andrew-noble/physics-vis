@@ -10,6 +10,7 @@ class MessageType(BaseModel):
 class AgentRequest(BaseModel):
     messages: List[MessageType]
     diagramData: Optional[Fbd] = None
+    sceneDescription: Optional[str] = None
 
 class AgentResponse(BaseModel):
     message: str

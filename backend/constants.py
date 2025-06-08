@@ -4,7 +4,7 @@ PROJECT_NAME = "Physics Visualization API"
 
 # Model Choices
 FBD_MODEL = "o3-mini"
-AGENT_MODEL = "o3-mini"
+AGENT_MODEL = "gpt-4.1"
 
 # Context Constants
 MAX_CONTEXT_MESSAGES = 20

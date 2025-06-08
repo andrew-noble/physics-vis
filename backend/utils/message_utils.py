@@ -18,5 +18,10 @@ def trim_context(messages: List[dict], max_messages: int = MAX_CONTEXT_MESSAGES)
 
 def inject_diagram_data(messages: List[dict], diagram_data: Fbd) -> List[dict]:
     """Add diagram data to the context."""
-    messages[-1].content += f"\n\nCurrent diagram data: {diagram_data}"
+    messages[-1].content += f"\n\nCurrent free body diagram the user is looking at: {diagram_data}"
+    return messages 
+
+def inject_scene_description(messages: List[dict], scene_description: str) -> List[dict]:
+    """Add scene description to the context."""
+    messages[-1].content += f"\n\nCurrent scene description that the user is looking at: {scene_description}"
     return messages 
