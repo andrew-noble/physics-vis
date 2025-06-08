@@ -10,12 +10,15 @@ AGENT_MODEL = "gpt-4.1"
 MAX_CONTEXT_MESSAGES = 20
 
 # Server Constants
-DEFAULT_HOST = "0.0.0.0"
-DEFAULT_PORT = 8000
+import os
+DEFAULT_HOST = os.getenv("BACKEND_HOST", "0.0.0.0")
+DEFAULT_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 
 # CORS Constants
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
+    "http://localhost:5173",  # Vite default dev server
+    "http://localhost:3000",  # Alternative dev server
+    FRONTEND_URL,            # Production or custom frontend URL
 ]
 
