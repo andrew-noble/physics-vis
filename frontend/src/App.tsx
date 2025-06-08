@@ -44,8 +44,6 @@ export default function App() {
           sceneDescriptions[currentSceneName as keyof typeof sceneDescriptions],
       };
 
-      console.log("payload", payload);
-
       // request event streaming session
       const response = await fetch(`${API_URL}/stream-sessions`, {
         method: "POST",
@@ -57,6 +55,7 @@ export default function App() {
 
       if (!response.ok) {
         setError(`HTTP error! status: ${response.status}`);
+        console.error("HTTP error!", response);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -82,6 +81,7 @@ export default function App() {
       eventSource.addEventListener("ai_message_shard", (event) => {
         const shard = JSON.parse(event.data);
         setPending(false);
+        console.log("shard", shard);
 
         setMessages((existingMessages) => {
           const content = existingMessages.find(

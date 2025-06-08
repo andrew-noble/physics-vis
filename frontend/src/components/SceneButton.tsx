@@ -19,7 +19,7 @@ const SceneButton: React.FC<SceneButtonProps> = ({
         className={`w-28 h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity ${
           isHighlighted ? "border-4 border-blue-500" : ""
         }`}
-        style={{ backgroundImage: `url("/${sceneName}.jpg")` }}
+        style={{ backgroundImage: `url("/physics-vis/${sceneName}.jpg")` }}
         onClick={onClick}
         disabled={disabled}
       />
