@@ -81,7 +81,6 @@ export default function App() {
       eventSource.addEventListener("ai_message_shard", (event) => {
         const shard = JSON.parse(event.data);
         setPending(false);
-        console.log("shard", shard);
 
         setMessages((existingMessages) => {
           const content = existingMessages.find(
