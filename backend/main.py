@@ -3,6 +3,7 @@
 import os
 import json
 from fastapi import FastAPI, HTTPException, Request
+from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -20,6 +21,7 @@ from constants import AGENT_MODEL, ALLOWED_ORIGINS, DEFAULT_HOST, DEFAULT_PORT, 
 import uuid
 import time
 from llm_recording import record_fbd_draw, record_agent_thinking
+import redis.asyncio as redis
 
 load_dotenv()
 
@@ -32,7 +34,34 @@ with open("logs/logging_config.json") as f:
 logging.config.dictConfig(log_config)
 log = logging.getLogger(__name__)
 
-app = FastAPI(title="FBD Generation API")
+# Initialize OpenAI client
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+log.info("OpenAI client initialized")
+
+# Initialize Redis
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+redis = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    try:
+        await redis.ping()
+        log.info("Redis connection established")
+    except Exception as e:
+        log.warning(f"Redis connection failed during startup: {e}")
+        log.warning("App will continue without Redis - some features may not work")
+    
+    yield
+    
+    # Shutdown
+    try:
+        await redis.close()
+        log.info("Redis connection closed")
+    except Exception as e:
+        log.warning(f"Error closing Redis connection: {e}")
+
+app = FastAPI(title="FBD Generation API", lifespan=lifespan)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -48,13 +77,6 @@ app.add_middleware(
     max_age=600,  # Cache preflight requests for 10 minutes
 )
 
-# Initialize OpenAI client
-client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-log.info("OpenAI client initialized")
-
-# just for dev, will need to move to Redis for prod
-stream_sessions: dict[str, dict] = {} 
-
 @app.get("/test")
 async def test():
     log.debug("Test endpoint called")
@@ -62,13 +84,16 @@ async def test():
     
 @app.post("/stream-sessions", response_model=StreamSession)
 @limiter.limit("10/minute") # limiter needs the Request, even if we don't use
-def request_stream_session(request: Request, data: AgentRequest) -> StreamSession:
+async def request_stream_session(request: Request, data: AgentRequest) -> StreamSession:
     session_id = str(uuid.uuid4())
     log.info(f"Starting stream session: {session_id}")
     log.debug(f"Request data: {data.model_dump_json()}")
 
+    # Convert Pydantic messages to dictionaries for processing
+    message_dicts = [msg.model_dump() for msg in data.messages]
+    
     # prep messages by applying rolling window and injecting diagram
-    messages = trim_context(data.messages)
+    messages = trim_context(message_dicts)
     log.debug(f"Trimmed context: {len(messages)} messages")
 
     messages = inject_scene_description(messages, data.sceneDescription)
@@ -77,12 +102,19 @@ def request_stream_session(request: Request, data: AgentRequest) -> StreamSessio
     messages = inject_diagram_data(messages, data.diagramData)
     log.debug("Diagram data injected into messages")
 
-    # store session
-    stream_sessions[session_id] = {
+    # store session in Redis
+    session_data = {
         "messages": messages,
-        "diagram_data": data.diagramData,
+        "diagram_data": data.diagramData.model_dump() if data.diagramData else None,
+        "scene_description": data.sceneDescription if data.sceneDescription else None,
     }
-    log.info(f"Session stored. Active sessions: {len(stream_sessions)}")
+    try:
+        # Use a more robust JSON serialization that can handle edge cases
+        await redis.set(f"session:{session_id}", json.dumps(session_data, default=str))
+        log.info(f"Session stored. Active sessions: {len(await redis.keys('session:*'))}")
+    except Exception as e:
+        log.error(f"Failed to store session in Redis: {e}")
+        raise HTTPException(status_code=503, detail="Session storage unavailable")
 
     return StreamSession(sessionId=session_id)
 
@@ -90,9 +122,19 @@ def request_stream_session(request: Request, data: AgentRequest) -> StreamSessio
 @limiter.limit("10/minute")
 async def receive_event_stream(request: Request, session_id: str):
     log.info(f"Streaming events for session: {session_id}")
-    if session_id not in stream_sessions:
-        log.error(f"Session not found: {session_id}")
-        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Get session from Redis
+    try:
+        session_data = await redis.get(f"session:{session_id}")
+        if not session_data:
+            log.error(f"Session not found: {session_id}")
+            raise HTTPException(status_code=404, detail="Session not found")
+    except Exception as e:
+        log.error(f"Failed to retrieve session from Redis: {e}")
+        raise HTTPException(status_code=503, detail="Session storage unavailable")
+    
+    session = json.loads(session_data)
+    messages = session["messages"]
 
     # helper function for streaming responses
     def sse_event(event_type, data):
@@ -100,7 +142,6 @@ async def receive_event_stream(request: Request, session_id: str):
         return f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
 
     async def event_stream() -> AsyncGenerator[str, None]:
-        messages = stream_sessions[session_id]["messages"]
         log.debug(f"Starting event stream with {len(messages)} messages")
 
         agent_start_time = time.perf_counter()
@@ -147,18 +188,12 @@ async def receive_event_stream(request: Request, session_id: str):
                                 log.info(f"Tool call announced: {entry['name']}")
                                 yield sse_event("tool_call", {"name": entry["name"]})
 
-                
-                
                 # if no tool calls, the agent is done
                 if not pending_calls:
                     log.info("Agent is done")
                     yield sse_event("complete", {})
                     agent_duration = time.perf_counter() - agent_start_time
                     log.info(f"Agent turn took {agent_duration} seconds")
-                    # Clean up the session
-                    if session_id in stream_sessions:
-                        del stream_sessions[session_id]
-                        log.info(f"Session {session_id} cleaned up. Active sessions: {len(stream_sessions)}")
                     return
 
                 # act - run the tool calls
@@ -208,11 +243,14 @@ async def receive_event_stream(request: Request, session_id: str):
 
         except Exception as e:
             log.error("Agent error occurred", exc_info=True)
-            # Clean up the session on error
-            if session_id in stream_sessions:
-                del stream_sessions[session_id]
-                log.info(f"Session {session_id} cleaned up due to error. Active sessions: {len(stream_sessions)}")
             raise HTTPException(status_code=500, detail=f"Agent error: {str(e)}")
+        finally:
+            # Clean up the session after streaming is complete or on error
+            try:
+                await redis.delete(f"session:{session_id}")
+                log.info(f"Session {session_id} cleaned up. Active sessions: {len(await redis.keys('session:*'))}")
+            except Exception as e:
+                log.warning(f"Failed to clean up session {session_id}: {e}")
         
     # this return happens before event_stream() ever runs, btw
     return StreamingResponse(event_stream(), media_type="text/event-stream")
