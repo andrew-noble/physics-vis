@@ -38,6 +38,8 @@ jobs:
           cd frontend
           npm ci
       - name: Build
+        env:
+          VITE_API_URL: https://physics-vis-backend.onrender.com
         run: |
           cd frontend
           npm run build
