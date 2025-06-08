@@ -20,7 +20,7 @@ async def draw_fbd(args: dict):
         current_fbd = json.dumps(args["existing_fbd_json"], indent=2)
         
         # Create the user message combining current FBD and instructions
-        user_message = f"Existing FBD:\n{current_fbd}\n\nInstructions: {args["instructions"]}"
+        user_message = f"Existing FBD:\n{current_fbd}\n\nInstructions: {args['instructions']}"
         
         response = await client.beta.chat.completions.parse(
             model=FBD_MODEL,

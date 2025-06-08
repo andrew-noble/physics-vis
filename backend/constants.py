@@ -15,10 +15,10 @@ DEFAULT_HOST = os.getenv("BACKEND_HOST", "0.0.0.0")
 DEFAULT_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 
 # CORS Constants
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173/physics-vis/")
 ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vite default dev server
-    "http://localhost:3000",  # Alternative dev server
-    FRONTEND_URL,            # Production or custom frontend URL
+    "http://localhost:5173/physics-vis/",  # Vite default dev server
+    "http://localhost:3000/physics-vis/",  # Alternative dev server
+    FRONTEND_URL,  # Production or custom frontend URL
 ]
 
