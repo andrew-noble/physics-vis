@@ -104,7 +104,6 @@ export default function App() {
 
       // handle tool calls
       eventSource.addEventListener("tool_call", (event) => {
-        console.log("tool call", event.data);
         setToolCalls((existingToolCalls) => [
           ...existingToolCalls,
           JSON.parse(event.data),
