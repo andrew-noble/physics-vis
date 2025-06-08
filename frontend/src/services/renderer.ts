@@ -83,7 +83,7 @@ export class Renderer {
     //   .call(() => this.renderAxes());
 
     // render body
-    const bodyGroup = rootGroup
+    rootGroup
       .append("g")
       .attr("class", "body-group")
       .call((selection) => this.renderBody(selection, diagram.body));
@@ -168,21 +168,21 @@ export class Renderer {
       .attr("d", "M 0 0 L 10 5 L 0 10 z");
   }
 
-  private renderAxes(): void {
-    // Add X axis
-    this.svg
-      .append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0,${this.yScale(0)})`)
-      .call(d3.axisBottom(this.xScale));
+  // private renderAxes(): void {
+  //   // Add X axis
+  //   this.svg
+  //     .append("g")
+  //     .attr("class", "x-axis")
+  //     .attr("transform", `translate(0,${this.yScale(0)})`)
+  //     .call(d3.axisBottom(this.xScale));
 
-    // Add Y axis
-    this.svg
-      .append("g")
-      .attr("class", "y-axis")
-      .attr("transform", `translate(${this.xScale(0)},0)`)
-      .call(d3.axisLeft(this.yScale));
-  }
+  //   // Add Y axis
+  //   this.svg
+  //     .append("g")
+  //     .attr("class", "y-axis")
+  //     .attr("transform", `translate(${this.xScale(0)},0)`)
+  //     .call(d3.axisLeft(this.yScale));
+  // }
 
   private renderBody(
     parentGroup: d3.Selection<SVGGElement, unknown, null, undefined>,

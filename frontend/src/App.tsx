@@ -185,6 +185,7 @@ export default function App() {
             <DiagramViewer diagramData={diagramData} />
           )}
         </div>
+        {error && <p className="text-red-500">Uh oh: {error}</p>}
       </div>
       <div className="overflow-y-auto">
         <ChatInterface
