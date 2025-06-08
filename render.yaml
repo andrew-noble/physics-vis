@@ -11,11 +11,11 @@ services:
         sync: false # Set manually in Render dashboard
       - key: REDIS_URL
         fromService:
-          type: redis
+          type: keyvalue
           name: physics-vis-redis
           property: connectionString
 
-  - type: redis
+  - type: keyvalue
     name: physics-vis-redis
-    plan: free
-    ipAllowList: []
+    plan: starter # Free tier is called "starter" for keyvalue
+    ipAllowList: [] # Only allow internal connections
