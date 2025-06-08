@@ -13,6 +13,7 @@ export default function App() {
   const [messages, setMessages] = useState<MessageType[]>([defaultMessage]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentScene, setCurrentScene] = useState<string>("block");
 
   const handleSendMessage = async (newMessageText: string) => {
     // store user's message
@@ -30,13 +31,6 @@ export default function App() {
         ],
         diagramData: diagramData,
       };
-
-      // prepare new assistant message husk
-      const assistantMessageId = crypto.randomUUID();
-      setMessages((existingMessages) => [
-        ...existingMessages,
-        { id: assistantMessageId, role: "assistant", content: "" },
-      ]);
 
       // request event streaming session
       const response = await fetch(`${API_URL}/stream-sessions`, {
@@ -62,9 +56,18 @@ export default function App() {
         }
       );
 
+      // create new assistant message id
+      const assistantMessageId = crypto.randomUUID();
+      // Create the empty message husk
+      setMessages((existingMessages) => [
+        ...existingMessages,
+        { id: assistantMessageId, role: "assistant", content: "" },
+      ]);
+
       // handle ai message shards
       eventSource.addEventListener("ai_message_shard", (event) => {
         const shard = JSON.parse(event.data);
+        setPending(false);
 
         setMessages((existingMessages) => {
           const content = existingMessages.find(
@@ -92,7 +95,7 @@ export default function App() {
       });
 
       // handle tool results
-      // TODO: this will likely need to change if/when we have tool results that arent diagramData
+      // TODO: this will need to change if/when we have tool results that arent diagramData
       eventSource.addEventListener("tool_result", (event) => {
         const result = JSON.parse(event.data);
         setDiagramData(result);
@@ -100,27 +103,65 @@ export default function App() {
 
       eventSource.addEventListener("complete", () => {
         eventSource.close();
+        setPending(false);
       });
 
       eventSource.onerror = (error) => {
         console.error("EventSource error:", error);
         eventSource.close();
+        setPending(false);
       };
-
-      // return smth?? Naw i don't think so?
     } catch (error) {
       console.error("Failed to send message:", error);
-      return messages;
-    } finally {
       setPending(false);
+      return messages;
     }
   };
 
   return (
     <div className="fixed inset-0 grid grid-cols-2">
-      <div className="flex justify-center items-center">
-        {/* likely want to make the width height responve later, this is where you do it */}
-        <DiagramViewer width={800} height={800} diagramData={diagramData} />
+      <div className="flex flex-col justify-center items-center gap-4">
+        <div className="bg-gray-100 p-4 rounded-lg shadow-md">
+          <h2 className="text-lg font-semibold mb-3 text-center">
+            Study a different scene
+          </h2>
+          <div className="flex gap-3">
+            <button
+              className="w-28 h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity"
+              style={{ backgroundImage: 'url("/block.jpg")' }}
+              onClick={() => setCurrentScene("block")}
+            />
+            <button
+              className="w-28 h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity"
+              style={{ backgroundImage: 'url("/car.jpg")' }}
+              onClick={() => setCurrentScene("car")}
+            />
+            <button
+              className="w-28 h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity"
+              style={{ backgroundImage: 'url("/ladder.jpg")' }}
+              onClick={() => setCurrentScene("ladder")}
+            />
+            <button
+              className="w-28 h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity"
+              style={{ backgroundImage: 'url("/pendulum.jpg")' }}
+              onClick={() => setCurrentScene("pendulum")}
+            />
+          </div>
+        </div>
+
+        <div className="bg-gray-100 p-4 rounded-lg shadow-md">
+          <h2 className="text-lg font-semibold mb-3 text-center">
+            Current Scene
+          </h2>
+          <div
+            className="w-32 h-32 bg-cover bg-center rounded-lg"
+            style={{ backgroundImage: `url("/${currentScene}.jpg")` }}
+          />
+        </div>
+
+        <div className="w-[700px] h-[700px]">
+          <DiagramViewer diagramData={diagramData} />
+        </div>
       </div>
       <div className="overflow-y-auto">
         <ChatInterface

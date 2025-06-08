@@ -1,12 +1,13 @@
-import { Role } from "@/types/chatUiTypes";
+import { Role } from "@/types/tutor/chat";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { ReactNode } from "react";
 
 interface MessageProps {
   role: Role;
-  content: string;
+  content: string | ReactNode;
 }
 
 // NOTE: this is model-specific, might need to be dynamic to model!
@@ -30,7 +31,8 @@ const convertLatexDelimiters = (text: string): string => {
 
 export function Message({ role, content }: MessageProps) {
   const isUser = role === "user";
-  const processedContent = convertLatexDelimiters(content);
+  const processedContent =
+    typeof content === "string" ? convertLatexDelimiters(content) : content;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -43,12 +45,16 @@ export function Message({ role, content }: MessageProps) {
     }
   `}
       >
-        <ReactMarkdown
-          remarkPlugins={[remarkMath]}
-          rehypePlugins={[rehypeKatex]}
-        >
-          {processedContent}
-        </ReactMarkdown>
+        {typeof processedContent === "string" ? (
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {processedContent}
+          </ReactMarkdown>
+        ) : (
+          processedContent
+        )}
       </div>
     </div>
   );

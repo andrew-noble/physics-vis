@@ -5,15 +5,11 @@ import { defaultThemeConfig } from "@/services/defaultThemeConfig";
 import { DiagramTheme } from "@/types/diagrams/fbdTheme";
 
 interface DiagramViewerProps {
-  width: number;
-  height: number;
   diagramData?: Diagram;
   themeConfig?: DiagramTheme;
 }
 
 export default function DiagramViewer({
-  width,
-  height,
   diagramData,
   themeConfig = defaultThemeConfig,
 }: DiagramViewerProps) {
@@ -26,6 +22,9 @@ export default function DiagramViewer({
       if (!svgRef.current) return;
 
       try {
+        // Get the actual size from the SVG element
+        const { width, height } = svgRef.current.getBoundingClientRect();
+
         rendererRef.current = new Renderer(
           svgRef.current,
           themeConfig,
@@ -49,7 +48,7 @@ export default function DiagramViewer({
         rendererRef.current = null;
       }
     };
-  }, [width, height]);
+  }, []);
 
   //rendering effect - rerender the circuit if the data changes
   useEffect(() => {
@@ -59,11 +58,7 @@ export default function DiagramViewer({
   }, [diagramData]);
 
   //I use viewbox to give the svg "padding"
-  const viewBox = `-40 -40 ${width + 80} ${height + 80}`;
-
-  // in this setup, the svg itself will be responsive (100%)
-  // but the actual svg content (the diagram) will attempt to stay the same
-  // (whatever is passed via props). This may need adjustment later.
+  const viewBox = `-40 -40 680 680`;
 
   return (
     <svg

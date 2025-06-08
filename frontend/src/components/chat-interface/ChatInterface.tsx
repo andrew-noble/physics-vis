@@ -25,7 +25,7 @@ export default function ChatInterface({
 
   return (
     <div className="flex h-full w-full flex-col bg-background text-foreground p-2 border-l border-gray-400">
-      <MessageList messages={messages} />
+      <MessageList messages={messages} pending={pending} />
       <InputBox disabled={pending} onSubmit={handleSend} />
     </div>
   );
