@@ -21,7 +21,6 @@ export interface Force {
   label: string;
   name: string;
   unit: string;
-  magnitude: number;
   angle: number; // these are absolute
   location: Location; // this location might change in svg bc of body rotation
   type: ForceType;
@@ -31,7 +30,6 @@ export interface Moment {
   label: string;
   name: string;
   unit: string;
-  magnitude: number;
   direction: MomentDirection;
   location: Location;
 }
