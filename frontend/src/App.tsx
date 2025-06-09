@@ -153,45 +153,55 @@ export default function App() {
   const sceneList = ["block", "car", "pendulum"];
 
   return (
-    <div className="fixed inset-0 grid grid-cols-2">
-      <div className="flex flex-col justify-center items-center gap-4">
-        <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold text-center">
-            Study a different scene
-          </h2>
-          <p className="text-sm text-gray-500 mb-5 text-center">
-            (Clears chat and diagram)
-          </p>
-          <div className="flex gap-3 justify-center items-center">
-            {sceneList.map((sceneName) => (
-              <SceneButton
-                sceneName={sceneName}
-                onClick={() => handleSceneChange(sceneName)}
-                disabled={currentScene === sceneName}
-                isHighlighted={currentScene === sceneName}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="w-[700px] h-[700px]">
-          {diagramPending ? (
-            <div className="flex justify-center items-center h-full">
-              <Spinner />
-            </div>
-          ) : (
-            <DiagramViewer diagramData={diagramData} />
-          )}
-        </div>
-        {error && <p className="text-red-500">Uh oh: {error}</p>}
+    <div className="fixed inset-0 flex flex-col">
+      {/* Mobile Warning Banner */}
+      <div className="md:hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-center">
+        <p className="text-sm font-medium">
+          ⚠️ This app is not ready for mobile, sorry!
+        </p>
       </div>
-      <div className="overflow-y-auto">
-        <ChatInterface
-          messages={messages}
-          pending={pending}
-          toolCalls={toolCalls}
-          onSendMessage={handleSendMessage}
-        />
+
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 min-h-0">
+        <div className="flex flex-col justify-center items-center gap-4 p-4">
+          <div className="bg-gray-100 p-4 rounded-lg shadow-md w-full max-w-md">
+            <h2 className="text-lg font-semibold text-center">
+              Study a different scene
+            </h2>
+            <p className="text-sm text-gray-500 mb-5 text-center">
+              (Clears chat and diagram)
+            </p>
+            <div className="flex gap-3 justify-center items-center flex-wrap">
+              {sceneList.map((sceneName) => (
+                <SceneButton
+                  key={sceneName}
+                  sceneName={sceneName}
+                  onClick={() => handleSceneChange(sceneName)}
+                  disabled={currentScene === sceneName}
+                  isHighlighted={currentScene === sceneName}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="w-full max-w-2xl aspect-square">
+            {diagramPending ? (
+              <div className="flex justify-center items-center h-full">
+                <Spinner />
+              </div>
+            ) : (
+              <DiagramViewer diagramData={diagramData} />
+            )}
+          </div>
+          {error && <p className="text-red-500">Uh oh: {error}</p>}
+        </div>
+        <div className="overflow-y-auto border-t border-gray-400">
+          <ChatInterface
+            messages={messages}
+            pending={pending}
+            toolCalls={toolCalls}
+            onSendMessage={handleSendMessage}
+          />
+        </div>
       </div>
     </div>
   );

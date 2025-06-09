@@ -43,12 +43,30 @@ export default function DiagramViewer({
 
     initializeRenderer();
 
+    // Add resize observer to handle container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      if (svgRef.current && rendererRef.current) {
+        const { width, height } = svgRef.current.getBoundingClientRect();
+        rendererRef.current.updateDimensions(width, height);
+
+        // Re-render with current data
+        if (diagramData) {
+          rendererRef.current.render(diagramData);
+        }
+      }
+    });
+
+    if (svgRef.current) {
+      resizeObserver.observe(svgRef.current);
+    }
+
     return () => {
+      resizeObserver.disconnect();
       if (rendererRef.current) {
         rendererRef.current = null;
       }
     };
-  }, []);
+  }, [themeConfig]);
 
   //rendering effect - rerender the circuit if the data changes
   useEffect(() => {
@@ -58,7 +76,7 @@ export default function DiagramViewer({
   }, [diagramData]);
 
   //I use viewbox to give the svg "padding"
-  const viewBox = `-40 -40 680 680`;
+  // const viewBox = `-40 -40 680 680`;
 
   return (
     <svg
@@ -67,7 +85,7 @@ export default function DiagramViewer({
       height="100%"
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
-      viewBox={viewBox}
+      // viewBox={viewBox}
       preserveAspectRatio="xMidYMid meet"
     />
   );
