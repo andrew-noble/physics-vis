@@ -8,6 +8,7 @@ import { defaultMessage } from "./data/defaultMessage";
 import SceneButton from "./components/SceneButton";
 import { sceneDescriptions } from "./data/sceneDescriptions";
 import Spinner from "./components/Spinner";
+import InfoModal from "./components/InfoModal";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,6 +20,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [currentScene, setCurrentScene] = useState<string>("block");
   const [toolCalls, setToolCalls] = useState<string[]>([]);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const handleSendMessage = async (
     newMessageText: string,
@@ -193,6 +195,14 @@ export default function App() {
             )}
           </div>
           {error && <p className="text-red-500">Uh oh: {error}</p>}
+          {/* Info button */}
+          <button
+            onClick={() => setIsInfoModalOpen(true)}
+            className="absolute top-2 right-2 w-6 h-6 bg-blue-500 text-white rounded-full text-sm font-bold hover:bg-blue-600 transition-colors flex items-center justify-center"
+            title="About this app"
+          >
+            i
+          </button>
         </div>
         <div className="overflow-y-auto border-t border-gray-400">
           <ChatInterface
@@ -203,6 +213,12 @@ export default function App() {
           />
         </div>
       </div>
+
+      {/* Info Modal */}
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+      />
     </div>
   );
 }
