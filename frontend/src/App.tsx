@@ -9,6 +9,7 @@ import SceneButton from "./components/SceneButton";
 import { sceneDescriptions } from "./data/sceneDescriptions";
 import Spinner from "./components/Spinner";
 import InfoModal from "./components/InfoModal";
+import EmailModal from "./components/EmailModal";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -21,6 +22,7 @@ export default function App() {
   const [currentScene, setCurrentScene] = useState<string>("block");
   const [toolCalls, setToolCalls] = useState<string[]>([]);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   const handleSendMessage = async (
     newMessageText: string,
@@ -163,6 +165,27 @@ export default function App() {
         </p>
       </div>
 
+      {/* Header with modal buttons */}
+      <div className="w-full flex justify-between gap-2 p-2 border-b">
+        <h1 className="text-2xl font-bold">Physics Tutor</h1>
+        <div id="header-buttons" className="flex gap-2">
+          <button
+            onClick={() => setIsEmailModalOpen(true)}
+            className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
+            title="Subscribe to updates"
+          >
+            Get Updates
+          </button>
+          <button
+            onClick={() => setIsInfoModalOpen(true)}
+            className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
+            title="About this app"
+          >
+            About
+          </button>
+        </div>
+      </div>
+
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 min-h-0">
         <div className="flex flex-col justify-center items-center gap-4 p-4">
           <div className="bg-gray-100 p-4 rounded-lg shadow-md w-full max-w-md">
@@ -195,14 +218,6 @@ export default function App() {
             )}
           </div>
           {error && <p className="text-red-500">Uh oh: {error}</p>}
-          {/* Info button */}
-          <button
-            onClick={() => setIsInfoModalOpen(true)}
-            className="absolute top-2 right-2 w-6 h-6 bg-blue-500 text-white rounded-full text-sm font-bold hover:bg-blue-600 transition-colors flex items-center justify-center"
-            title="About this app"
-          >
-            i
-          </button>
         </div>
         <div className="overflow-y-auto border-t border-gray-400">
           <ChatInterface
@@ -213,6 +228,11 @@ export default function App() {
           />
         </div>
       </div>
+
+      <EmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+      />
 
       {/* Info Modal */}
       <InfoModal

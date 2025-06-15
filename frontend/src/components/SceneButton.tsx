@@ -16,7 +16,7 @@ const SceneButton: React.FC<SceneButtonProps> = ({
   return (
     <div className="flex flex-col items-center justify-center">
       <button
-        className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity ${
+        className={`w-18 h-18 sm:w-22 sm:h-22 md:w-28 md:h-28 lg:w-32 lg:h-32 bg-cover bg-center rounded-lg hover:opacity-90 transition-opacity ${
           isHighlighted
             ? "border-2 sm:border-3 md:border-4 border-blue-500"
             : ""
