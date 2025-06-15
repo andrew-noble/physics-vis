@@ -14,7 +14,28 @@ services:
           name: physics-vis-redis
           property: connectionString
 
+  # this is the redis instance
   - type: keyvalue
     name: physics-vis-redis
     plan: starter # Free tier is called "starter" for keyvalue
     ipAllowList: [] # Only allow internal connections
+
+  - type: web
+    runtime: static
+    name: physics-vis-frontend
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    autoDeploy: true # Enable auto-deploy for frontend (this is default, but being explicit)
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+      - path: /*.css
+        name: Content-Type
+        value: text/css
+      - path: /*.js
+        name: Content-Type
+        value: application/javascript
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://physics-vis-backend.onrender.com # Update after backend is deployed
