@@ -159,15 +159,15 @@ export default function App() {
   return (
     <div className="fixed inset-0 flex flex-col">
       {/* Mobile Warning Banner */}
-      <div className="md:hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-center">
+      <div className="md:hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-1 text-center">
         <p className="text-sm font-medium">
-          ⚠️ This app is not ready for mobile, sorry!
+          ⚠️ Not optimized for mobile yet, sorry!
         </p>
       </div>
 
       {/* Header with modal buttons */}
       <div className="w-full flex justify-between gap-2 p-2 border-b">
-        <h1 className="text-2xl font-bold">Physics Tutor</h1>
+        <h1 className="text-lg md:text-2xl font-bold">Physics Tutor</h1>
         <div id="header-buttons" className="flex gap-2">
           <button
             onClick={() => setIsEmailModalOpen(true)}
@@ -187,12 +187,12 @@ export default function App() {
       </div>
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 min-h-0">
-        <div className="flex flex-col justify-center items-center gap-4 p-4">
-          <div className="bg-gray-100 p-4 rounded-lg shadow-md w-full max-w-md">
+        <div className="flex flex-col justify-center items-center gap-4 p-2">
+          <div className="bg-gray-100 p-2 rounded-lg shadow-md w-full max-w-md">
             <h2 className="text-lg font-semibold text-center">
               Study a different scene
             </h2>
-            <p className="text-sm text-gray-500 mb-5 text-center">
+            <p className="text-sm text-gray-500 mb-2 text-center">
               (Clears chat and diagram)
             </p>
             <div className="flex gap-3 justify-center items-center flex-wrap">
@@ -208,7 +208,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="w-full max-w-2xl aspect-square">
+          <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl aspect-square">
             {diagramPending ? (
               <div className="flex justify-center items-center h-full">
                 <Spinner />
