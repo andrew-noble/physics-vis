@@ -26,7 +26,7 @@ services:
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
-      - key: VITE_API_BASE_URL
+      - key: VITE_API_URL
         value: https://physics-vis-backend.onrender.com # Update after backend is deployed
     autoDeploy: true # Enable auto-deploy for frontend (this is default, but being explicit)
     headers:
