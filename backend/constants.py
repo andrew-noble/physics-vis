@@ -18,7 +18,7 @@ DEFAULT_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite default dev server
     "http://localhost:3000",  # Alternative dev server
-    "https://www.andrewnoble.me",
-    "https://andrewnoble.me",
+    "https://www.physics-vis-frontend.onrender.com",
+    "https://www.physicsviewer.com",
 ]
 
