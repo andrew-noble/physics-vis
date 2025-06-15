@@ -21,7 +21,7 @@ const SceneButton: React.FC<SceneButtonProps> = ({
             ? "border-2 sm:border-3 md:border-4 border-blue-500"
             : ""
         }`}
-        style={{ backgroundImage: `url("/physics-vis/${sceneName}.jpg")` }}
+        style={{ backgroundImage: `url("/${sceneName}.jpg")` }}
         onClick={onClick}
         disabled={disabled}
       />
