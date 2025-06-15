@@ -28,21 +28,25 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
 
             <div className="space-y-4 text-gray-700">
               <p>
-                This is a prototype physics tutor. It uses AI to generate
-                diagrams and explain physics concepts.
+                This is a prototype physics tutor. It uses AI to generate free
+                body diagrams and explain physics concepts.
               </p>
-
               <p>
-                I have been enjoying learning and brushing up on physics
-                concepts using LLMs for years now. Physics and many topics are
-                visual though, and image generation is slow and non-interactive.{" "}
-              </p>
-
+                LLM's are great for learning but they're just text-based. What
+                if the LLM could make interactive visualizations? This is a
+                prototype of that idea.{" "}
+              </p>{" "}
               <p>
-                I thought it would be a huge value add if they could make
-                diagrams for you, too.
+                I also made a similar prototype to learn circuit theory, check
+                it out:{" "}
+                <a
+                  href="https://www.circuit-tutor.xyz"
+                  className="text-blue-500 hover:text-blue-600"
+                >
+                  circuit tutor
+                </a>
+                .
               </p>
-
               <div>
                 <h3 className="font-semibold mb-2">How to use:</h3>
                 <ol className="list-decimal list-inside space-y-1 text-sm">
@@ -54,7 +58,6 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                   <li>Explore different scenarios and forces</li>
                 </ol>
               </div>
-
               <p className="border-t pt-4">
                 Made by Andrew. Let me know if you have feedback:{" "}
                 <a
