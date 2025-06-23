@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from schemas.api import AgentRequest, StreamSession
-from utils.message_utils import trim_context, inject_diagram_data, inject_scene_description
+from utils.message_utils import trim_context, inject_diagram_data, inject_scene_description, inject_scene_photo
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -102,11 +102,15 @@ async def request_stream_session(request: Request, data: AgentRequest) -> Stream
     messages = inject_diagram_data(messages, data.diagramData)
     log.debug("Diagram data injected into messages")
 
+    messages = inject_scene_photo(messages, data.scenePhoto)
+    log.debug("Scene photo injected into messages")
+
     # store session in Redis
     session_data = {
         "messages": messages,
         "diagram_data": data.diagramData.model_dump() if data.diagramData else None,
         "scene_description": data.sceneDescription if data.sceneDescription else None,
+        "scene_photo": data.scenePhoto if data.scenePhoto else None,
     }
     try:
         # Use a more robust JSON serialization that can handle edge cases
